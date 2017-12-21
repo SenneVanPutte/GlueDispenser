@@ -5,11 +5,17 @@ from math import sqrt
 import signal
 import sys
 import serial
+import io
+from threading import Thread
+
+kill=0
+
 
 def emergency_stop(signal, frame):
 	global machine
 	print "Emergency Stop sequence"
 	machine.stop()
+	kill=1
 	exit(0)
 	
 
@@ -26,81 +32,137 @@ class gcode():
 	def __init__(self, serialport=None):
 		self.x=-1
 		self.y=-1
-		self.speed=100 #mm/s
-		self.zspeed=10 #mm/s on Z axis
-		self.aspeed=10 #deg/s
+		self.speed=10000 #mm/min
+		self.zspeed=2000 #mm/min on Z axis
+		self.aspeed=10 #deg/min
 		self.time_movingxy=0
 		self.time_movingz=0
 		self.time_glueing=0
 		self.line_number=0
+		self.alpha=0 #alpha angle of the machine
 		if "serial" in sys.argv:
 			
-			self.serialport=serial.Serial(r"/dev/ttyUSB0", baudrate=115200, rtscts=True)
+			tg=serial.Serial(r"COM3", baudrate=115200, xonxoff=True, timeout=0.5)
+			self.serialport = io.TextIOWrapper(io.BufferedRWPair(tg, tg))
 		else:
 			self.serialport=None
+			
+		self.kill=0 #send exit signal to read thread
+		self.command_done=0
+		self.readthread = Thread(target=self.readState)
+		#self.readthread.start()
+	def readState(self):
+		print "reading thread alive"
+		global kill, command_done
+		while not kill:
+			line=self.serialport.readline()
+			if line: print line[:-1]
+			if '"qr":32' in line:
+				command_done=1
+
 	def send_line(self,line):
-		if self.serialport and self.serialport.cts:
-			self.serialport.write(line)
-			ack=self.serialport.read() #might be blocked until command finishes ???
-			print ack
+		#if self.serialport and self.serialport.cts:
+		if not "$" in line:
+			self.serialport.write(unicode('{"gc":"'+line+'"}\n'))
+		else:
+			self.serialport.write(unicode(line))
+		self.serialport.flush()
+		#	time.sleep(0.5)
+		#	ack=self.serialport.readline() #might be blocked until command finishes ???
+		#	print ack
 
 	def send_bloc(self, bloc):
 		self.line_number+=(10-self.line_number%10) #round the line number 
 		for l in bloc.splitlines():
-			txt="N{0:05} {1}".format(self.line_number,l)
+			if "$" not in l: #if config line
+				txt="N{0:05} {1}".format(self.line_number,l)
+			else:
+				txt=l
+			#global command_done
+			
+			#if '"qr":32' in line:
+			#	command_done=1
+			#while (not command_done):
+			#	time.sleep(0.1)
+			#command_done=0 #we start a new command
 			if verbose: print "===>\t",txt
 			self.send_line(txt)
+			#time.sleep(0.5)
+			line="x"
+			while(line):#'"qr":32' not in line and "$" not in line and "ok" not in line):
+				line=self.serialport.readline()
+				if line: print line,
+			#print self.serialport.readlines()
 			if "step" in sys.argv: raw_input("press Enter to continue")
 			self.line_number+=1
 			self.line_number%=100000 # line number wrapping, (spec)
 			
 	def down(self):
+		t=time.time()
 		print "down"
-		gcode="G1 Z10, {}".format(self.zspeed)
+		gcode="G1 Z20 F{}".format(self.zspeed)
 		t=1
-		time.sleep(t)
-		self.time_movingz+=t
+		#time.sleep(t)
+		
 		self.send_bloc(gcode)
+		self.time_movingz+=(time.time()-t)
 	def up(self):
+		t=time.time()
 		print "up"
-		gcode="G1 Z20, {}".format(self.zspeed)
+		gcode="G1 Z10 F{}".format(self.zspeed)
 		t=1
-		time.sleep(t)
-		self.time_movingz+=t
+		#time.sleep(t)
+		
 		self.send_bloc(gcode)
+		self.time_movingz+=(time.time()-t)
 	
 	def gotoxy(self, x,y):
+		t=time.time()
 		distance=sqrt((self.x-x)**2+(self.y-y)**2)
 		print "goto {}, {}, ({}s)".format(x,y,distance/self.speed)
-		gcode="G1 X{} Y{}, {}".format(x,y,self.speed)
+		gcode="G1 X{} Y{} F{}".format(x,y,self.speed)
 		self.send_bloc(gcode)
 		self.x=x
 		self.y=y
-		time.sleep(distance/self.speed)
-		self.time_movingxy=distance/self.speed
+		#time.sleep(distance/self.speed)
+		#self.time_movingxy=distance/self.speed
+		self.time_movingxy+=(time.time()-t)
 		
 	def glue(self, turns=1):
+		t=time.time()
 		print "glueing {}".format(turns)
-		time.sleep(turns)
-		gcode="G1 A{0}, {1}; {2} turns".format(turns*360.,self.aspeed, turns)
+		#time.sleep(turns)
+		self.alpha=self.alpha+360.0*turns
+		gcode="G0 A{0} F{1}; {2} turns".format(self.alpha,self.aspeed, turns)
 		self.send_bloc(gcode)
-		self.time_glueing+=turns
+		self.time_glueing+=(time.time()-t)
+		
 	
 	def init_code(self):
 		#send initialisation sequence
-		code="""G61 ;exact path model
+		code="""$ex=1
+		$ej=0
+		$ec=0
+		$ee=1
+		$jv=3
+		$js=1
+		G61 ;e-xact path model
 		G21; select mm unit (just in case)
 		G40 ; cancel cutter radius compensation
 		G28.2 X0 Y0 Z0 A0 ;homing sequence
-		G1 Z20 ;move Z to high position
+		G1 Z10 F1000 ;move Z to high position
+		G1 X300 Y250 F10000; move to paper page
 		"""
 		self.send_bloc(code)
 	
 	def closing_code(self):
-		code=""
+		code="""G1 Z10 F1000 ;move Z to high position
+		G1 X300 Y250 F10000; move to paper page"""
 		self.send_bloc(code)
 	def stop(self):
 		gcode="M30"
+		global kill
+		kill=1
 		self.send_bloc(gcode)
 		print "##### EMERGENCY STOP #####"
 
@@ -131,17 +193,23 @@ if __name__=="__main__":
 	print "generate G code"
 	start=time.time()
 	machine=gcode()
+	
 	print "machine initialisation"
 	machine.init_code()
+	kill=1
+	#exit(0)
 	print "===> lines"
+	machine.up()
 	if len(lines)>0:
 		init_move=lines[0][0]
 		machine.gotoxy(*init_move)
-		machine.down()
+		
 	
 	
 	previous_point=lines[0][0]
 	n=0
+	machine.down()
+	raw_input("set pen")
 	for l in lines:
 		n+=1
 		print "{0:06.1f}\t {2}/{3} {1}".format(-start+time.time(),l,n,len(lines))
@@ -168,7 +236,8 @@ if __name__=="__main__":
 		machine.down()
 		machine.glue(1)
 		machine.up()
-		
+	
+	machine.up()
 	machine.gotoxy(0,0)
 	print "{0:06.1f}\t END".format(time.time()-start)
 	print "xy {}s".format(machine.time_movingxy)

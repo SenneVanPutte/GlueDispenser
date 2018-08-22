@@ -32,7 +32,7 @@ class gcode():
 	def __init__(self, serialport=None):
 		self.x=-1
 		self.y=-1
-		self.speed=10000 #mm/min
+		self.speed=2000 #mm/min
 		self.zspeed=2000 #mm/min on Z axis
 		self.aspeed=10 #deg/min
 		self.time_movingxy=0
@@ -181,7 +181,7 @@ if __name__=="__main__":
 			lines.append([e.dxf.start, e.dxf.end])
 		if e.dxftype() == 'POINT' and e.dxf.layer=="points":
 			#print "Point on layer: {}".format(  e.dxf.layer)
-			#print e, dir(e), dir(e.dxf)
+			print e, dir(e), dir(e.dxf)
 			print "point: {}\n".format(  e.dxf.location)
 			#print "end point: {}\n".format(  e.dxf.end)
 			if e.dxf.location not in points: points.append(e.dxf.location)

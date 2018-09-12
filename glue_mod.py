@@ -155,6 +155,14 @@ class gcode():
 		$ee=1
 		$jv=3
 		$js=1
+		; PWM config for glue dispenser
+		$p1frq=10000 ;10kHz
+		$p1csl=0     ;lowest=0
+		$p1csh=5700 ; highest in mbar
+		$p1cpl=0.0
+		$p1cph=1.0 ;for 1.0 duty cycle
+		;M3 S<speed> to use
+		;
 		G61 ;e-xact path model
 		G21; select mm unit (just in case)
 		G40 ; cancel cutter radius compensation
@@ -172,7 +180,9 @@ class gcode():
 		G1 X300 Y250 F10000; move to paper page"""
 		self.send_bloc(code)
 	def stop(self):
-		gcode="M30"
+		gcode="""
+		M5 ;stop glue
+		M30"""
 		global kill
 		kill=1
 		self.send_bloc(gcode)

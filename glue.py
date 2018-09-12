@@ -62,6 +62,7 @@ class gcode():
 
 	def send_line(self,line):
 		#if self.serialport and self.serialport.cts:
+		print line
 		if not "$" in line:
 			self.serialport.write(unicode('{"gc":"'+line+'"}\n'))
 		else:
@@ -155,6 +156,9 @@ class gcode():
 		"""
 		self.send_bloc(code)
 	
+	def home(self):
+		self.send_bloc("G28.2 X0 Y0 Z0 A0")
+	
 	def closing_code(self):
 		code="""G1 Z10 F1000 ;move Z to high position
 		G1 X300 Y250 F10000; move to paper page"""
@@ -171,24 +175,30 @@ if __name__=="__main__":
 	print "extract glue coordinates from DXF file"
 	dwg=ezdxf.readfile("glue.dxf")
 	mod=dwg.modelspace()
-	lines=[]
-	points=[]
+	borders=[]
+	glue_dots=[]
+	glue_lines=[]
 	for e in mod:
 		if e.dxftype() == 'LINE' and e.dxf.layer=="border":
 			#print "LINE on layer: {}\n".format(  e.dxf.layer)
 			print "start point: {}".format(  e.dxf.start)
 			print "end point: {}".format(  e.dxf.end)
-			lines.append([e.dxf.start, e.dxf.end])
-		if e.dxftype() == 'POINT' and e.dxf.layer=="points":
+			borders.append([e.dxf.start, e.dxf.end])
+		if e.dxftype() == 'LINE' and e.dxf.layer=="glue_lines":
+			#print "LINE on layer: {}\n".format(  e.dxf.layer)
+			print "start point: {}".format(  e.dxf.start)
+			print "end point: {}".format(  e.dxf.end)
+			glue_lines.append([e.dxf.start, e.dxf.end])
+		if e.dxftype() == 'POINT' and e.dxf.layer=="glue_dots":
 			#print "Point on layer: {}".format(  e.dxf.layer)
-			print e, dir(e), dir(e.dxf)
-			print "point: {}\n".format(  e.dxf.location)
+			#print e, dir(e), dir(e.dxf)
+			#print "point: {}\n".format(  e.dxf.location)
 			#print "end point: {}\n".format(  e.dxf.end)
-			if e.dxf.location not in points: points.append(e.dxf.location)
-		
-	print "found {} lines, {} points".format(len(lines), len(points))
-	print lines
-	print points
+			if e.dxf.location not in glue_dots: glue_dots.append(e.dxf.location)
+	
+	print "found {} borders, {} glue_dots".format(len(borders), len(glue_dots))
+	print borders
+	print glue_dots
 	
 	print "generate G code"
 	start=time.time()
@@ -198,21 +208,21 @@ if __name__=="__main__":
 	machine.init_code()
 	kill=1
 	#exit(0)
-	print "===> lines"
+	print "===> borders"
 	machine.up()
-	if len(lines)>0:
-		init_move=lines[0][0]
+	if len(borders)>0:
+		init_move=borders[0][0]
 		machine.gotoxy(*init_move)
 		
 	
 	
-	previous_point=lines[0][0]
+	previous_point=borders[0][0]
 	n=0
 	machine.down()
 	raw_input("set pen")
-	for l in lines:
+	for l in borders:
 		n+=1
-		print "{0:06.1f}\t {2}/{3} {1}".format(-start+time.time(),l,n,len(lines))
+		print "{0:06.1f}\t {2}/{3} {1}".format(-start+time.time(),l,n,len(borders))
 		startpoint=l[0]
 		endpoint=l[1]
 		if startpoint!=previous_point:
@@ -224,13 +234,13 @@ if __name__=="__main__":
 		previous_point=endpoint
 	machine.up()
 	
-	#sort points in X, then Y, then order them from the 1st with closest distance first
+	#sort glue_dots in X, then Y, then order them from the 1st with closest distance first
 	
-	print "lines done\n===> points"
+	print "borders done\n===> glue_dots"
 	n=0
-	for p in points:
+	for p in glue_dots:
 		n+=1
-		print "{0:06.1f}\t {2}/{3} {1}".format(-start+time.time(),p,n,len(points))
+		print "{0:06.1f}\t {2}/{3} {1}".format(-start+time.time(),p,n,len(glue_dots))
 		machine.up()
 		machine.gotoxy(*p)
 		machine.down()

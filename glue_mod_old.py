@@ -9,66 +9,11 @@ import io
 from threading import Thread
 
 kill=0
-
-#BOARDS_CFG = {
-#    # offset: {board nr: [x[mm], y[mm]]}
-#    'offsets' : {'1': [175, 100]},
-#    # hight: z[mm]
-#    'hight' : 20,
-#}
-
-BOARDS_CFG = {
-    # offset: {board nr: [x[mm], y[mm]]}
-    'offsets' : {'1': [175, 100]},
-    # hight: z[mm]
-    'hight_1' : 20,
-	'hight_2' : 25,
-}
-
-ST_CFG = {
-    # offset: [x[mm], y[mm]]
-    'offset' : [75, 100],
-    # hight: z[mm]
-    'hight' : 20,
-	'speed' : {
-    	# line nr: mm/min
-    	1: 2000,
-    	2: 1600,
-    	3: 1200,
-    	4: 800,
-    	5: 400,
-	},
-	'pressure' : {
-    	# line nr: mbar
-    	1: 100,
-    	2: 200,
-    	3: 300,
-    	4: 400,
-    	5: 500,
-	}
-}
-
 MIN_OFFSET = [75, 100]
-
-'''
-SPEED_CFG = {
-    # speed nr: mm/min
-    1: 2000,
-    2: 1600,
-    3: 1200,
-    4: 800,
-    5: 400,
-}
-
-PRESSURE_CFG = {
-    # color nr: mbar
-    1: 100,
-    2: 200,
-    3: 300,
-    4: 400,
-    5: 500,
-}
-'''
+SPEED_DICT = {}
+PRESSURE_DICT = {1: 100, 2: 200, 3: 300, 4: 400, 5: 500}
+for i in range(5):
+	SPEED_DICT[i+1] = 2000 - i*400 
 
 def emergency_stop(signal, frame):
 	global machine
@@ -77,6 +22,7 @@ def emergency_stop(signal, frame):
 	kill=1
 	exit(0)
 	
+
 if "verbose" in sys.argv:
 	verbose=1
 else:
@@ -98,19 +44,19 @@ class gcode():
 		self.time_glueing=0
 		self.line_number=0
 		self.alpha=0 #alpha angle of the machine
-		self.glue_start=None
-		self.is_glueing=False
-		if "noserial" in sys.argv:
-			self.serialport_pnp=None
-		else:
-			tg=serial.Serial(r"COM3", baudrate=115200, xonxoff=True, timeout=0.1)
+		if "serial" in sys.argv:
+			tg=serial.Serial(r"COM3", baudrate=115200, xonxoff=True, timeout=0.5)
 			self.serialport_pnp = io.TextIOWrapper(io.BufferedRWPair(tg, tg))
-		
+			#TO DO: do something like this for the pressure regulation
+			#gt=serial.Serial(bla)
+			#self.serialport_press = io.TextIOWrapper(io.BufferedRWPair(gt, gt))
+		else:
+			self.serialport_pnp=None
+			
 		self.kill=0 #send exit signal to read thread
 		self.command_done=0
 		self.readthread = Thread(target=self.readState)
 		#self.readthread.start()
-		
 	def readState(self):
 		print "reading thread alive"
 		global kill, command_done
@@ -157,17 +103,15 @@ class gcode():
 			self.line_number+=1
 			self.line_number%=100000 # line number wrapping, (spec)
 			
-	def down(self, hight=BOARDS_CFG['hight_1']):
-		gcode="G1 Z{} F{}".format(hight, self.zspeed)
+	def down(self):
 		t=time.time()
 		#print "down"
-    	
-		#t=1
+		gcode="G1 Z20 F{}".format(self.zspeed)
+		t=1
 		#time.sleep(t)
 		
 		self.send_bloc(gcode)
 		self.time_movingz+=(time.time()-t)
-		
 	def up(self):
 		t=time.time()
 		#print "up"
@@ -196,16 +140,10 @@ class gcode():
 		
 	def set_pressure(self, press):
 		p_gcode = "M3 S{}".format(press)
-		if not self.is_glueing:
-			self.glue_start = time.time()
-			self.is_glueing = True
 		self.send_bloc(p_gcode)
 		
 	def stop_pressure(self):
 		self.send_bloc("M5")
-		if self.is_glueing:
-			self.time_glueing += (time.time() - self.glue_start)
-			self.is_glueing = False
 				
 	def glue(self, turns=1):
 		t=time.time()
@@ -239,8 +177,8 @@ class gcode():
 		G40 ; cancel cutter radius compensation
 		G28.2 X0 Y0 Z0 A0 ;homing sequence
 		G1 Z0 F1000 ;move Z to high position
+		G1 X300 Y250 F10000; move to paper page
 		"""
-		#G1 X300 Y250 F10000; move to paper page
 		self.send_bloc(code)
 	
 	def home(self):
@@ -262,50 +200,46 @@ class gcode():
 		self.send_bloc(gcode)
 		print "##### EMERGENCY STOP #####"
 
-def draw_lines(lines, machine, offset=MIN_OFFSET, lines_w=None, pressue_v=None, set_pen=False, hight=BOARDS_CFG['hight_1']):
-		
-		# Check input config
+def draw_lines(lines, machine, offset=MIN_OFFSET, lines_w=None, pressue_v=None, set_pen=False):
 		offset_test(offset)
 		if lines_w is not None and len(lines) != len(lines_w): raise IOError("draw_lines: lines and lines_w must have same length")
 		if pressue_v is not None and len(lines) != len(pressue_v): raise IOError("draw_lines: lines and pressue_v must have same length")
 		if len(lines) == 0: 
 			print("draw_lines: no lines found.")
 			return
-		
-		# Set machine positions
 		init_move=lines[0][0]
 		machine.gotoxy(init_move[0] + offset[0], init_move[1] + offset[1])
 		previous_point=lines[0][0]
-		machine.down(hight)
+		n=0
+		machine.down()
 		if set_pen:
 			raw_input("-set pen")
-
-		# Draw the lines
 		for i,l in enumerate(lines):
+			n+=1
 			startpoint=l[0]
 			endpoint=l[1]
 			if startpoint!=previous_point:
 				machine.stop_pressure()
 				machine.up()
 				machine.gotoxy(startpoint[0] + offset[0], startpoint[1] + offset[1])
-				machine.down(hight)
+				machine.down()
 			#goto end point
-			if pressue_v is not None: machine.set_pressure(ST_CFG['pressure'][pressue_v[i]])
+			if pressue_v is not None: machine.set_pressure(PRESSURE_DICT[pressue_v[i]])
 			if lines_w is None:
 				machine.gotoxy(endpoint[0] + offset[0], endpoint[1] + offset[1])
 			else:
-				machine.gotoxy(endpoint[0] + offset[0], endpoint[1] + offset[1], ST_CFG['speed'][lines_w[i]])
+				machine.gotoxy(endpoint[0] + offset[0], endpoint[1] + offset[1], SPEED_DICT[lines_w[i]])
 			previous_point=endpoint
 		machine.stop_pressure()
 		machine.up()
 
-def draw_dots(dots, machine, offset=MIN_OFFSET, set_pen=False, hight=BOARDS_CFG['hight_1']):
+def draw_dots(dots, machine, offset=MIN_OFFSET, set_pen=False):
 		offset_test(offset)
 		machine.up()
 		machine.gotoxy(dots[0][0] + offset[0], dots[0][1] + offset[1])
 	
 		if set_pen:
-			machine.down(hight)
+			machine.down()
 			raw_input("-set pen")
 		n=0
 		for p in dots:
@@ -313,69 +247,55 @@ def draw_dots(dots, machine, offset=MIN_OFFSET, set_pen=False, hight=BOARDS_CFG[
 			#print "{0:06.1f}\t {2}/{3} {1}".format(-start+time.time(),p,n,len(glue_dots))
 			machine.up()
 			machine.gotoxy(p[0] + offset[0], p[1] + offset[1])
-			machine.down(hight)
+			machine.down()
 			machine.glue(1)
 			machine.up()
 		
 def line_width_test( dxf_file_name, machine, offset=MIN_OFFSET):
-
-		# Load the linewidth test file
 		print("loading data from " + dxf_file_name)
 		if dxf_file_name is None: 
 			return 1
-		dwg_lw = ezdxf.readfile(dxf_file_name)
-		mod_lw = dwg_lw.modelspace()
+		dwg_lw=ezdxf.readfile(dxf_file_name)
+		mod_lw=dwg_lw.modelspace()
 	
-		# Declare and fill the variables from the file
-		borders_lw = []
-		glue_lines_lw = []
+		borders_lw=[]
+		glue_lines_lw=[]
 		lw_list = [] 
 		lc_list = []
-		lw_CFG = {}
+		lw_dict = {} 
+		LW = None 
 		for e in mod_lw:
-			if e.dxftype() == 'LINE' and e.dxf.layer == "border":
+			if e.dxftype() == 'LINE' and e.dxf.layer=="border":
 				borders_lw.append([e.dxf.start, e.dxf.end])
-			if e.dxftype() == 'LINE' and e.dxf.layer == "glue_lines":
+			if e.dxftype() == 'LINE' and e.dxf.layer=="glue_lines":
 				lw_list.append(e.dxf.lineweight)
 				lc_list.append(e.dxf.color)
 				glue_lines_lw.append([e.dxf.start, e.dxf.end])
 		glue_lw = lw_list
 		lw_list.sort()
 		lc_list.sort()
-
-		# Show what we found
 		print "appearing line widths: "
 		for i,lw in enumerate(lw_list):
-			lw_CFG[lw] = i+1
-			print "  line " + str(i+1) + " has speed " + str(ST_CFG['speed'][i+1]) + " mm/min, and pressure " + str(ST_CFG['pressure'][i+1]) + " mbar"
-		nlw_list = [lw_CFG[lw] for lw in lw_list]
+			lw_dict[lw] = i+1
+			print "  line " + str(i+1) + " has width " + str(lw) + " and pressure color " + str(lc_list[i])
+
+		nlw_list = [lw_dict[lw] for lw in lw_list]
 	
-		# Draw borders (to be removed)
 		print "-drawing borders"
 		machine.up()
-		draw_lines(borders_lw, machine, offset=offset, set_pen=True, hight=ST_CFG['hight'])
+		draw_lines(borders_lw, machine, offset=offset, set_pen=True)
 		
-		# Glue lines
 		print "-glueing lines"
-		draw_lines(glue_lines_lw, machine, offset=offset, lines_w=nlw_list, pressue_v=lc_list, hight=ST_CFG['hight'])
+		draw_lines(glue_lines_lw, machine, offset=offset, lines_w=nlw_list, pressue_v=lc_list)
 		machine.gotoxy(offset[0], offset[1])
 		
-		# Choose the appropriate line width manually
 		chosen_lw = raw_input("Choose line width from 1 to 5: ")
-		try:
-			chosen_lw = int(chosen_lw)
-		except:
-			print("Waring: unknown input '" + str(chosen_lw) + "', put to 0")
-			chosen_lw = 0
+		chosen_lw = int(chosen_lw)
 		tries = 1
 		while chosen_lw not in range(1,6) and tries < 3:
 			print("Received " + str(chosen_lw) + " should be number between 1 and 5, " + str(3 - tries) + " tries left")
 			chosen_lw = raw_input("Rechoose line width from 1 to 5: ")
-			try:
-				chosen_lw = int(chosen_lw)
-			except:
-				print("Waring: unknown input '" + str(chosen_lw) + "', put to 0")
-				chosen_lw = 0
+			chosen_lw = int(chosen_lw)
 			tries += 1
 		
 		if chosen_lw not in range(1,6): raise IOError("Linewidth not between 1 and 5")
@@ -384,13 +304,7 @@ def line_width_test( dxf_file_name, machine, offset=MIN_OFFSET):
 		return chosen_lw
 
 def load_board(dxf_file_name, chosen_lw):
-
-	# Loading board file
 	print("loading data from " + dxf_file_name)
-	dwg=ezdxf.readfile(dxf_file_name)
-	mod=dwg.modelspace()
-
-	# Declare and fill variables from the file
 	board = {}
 	board["boarders"] = []
 	board["glue_dots"] = []
@@ -400,55 +314,62 @@ def load_board(dxf_file_name, chosen_lw):
 	board["glue_zigzag"] = []
 	board["glue_zigzag_w"] = []
 	board["glue_zigzag_p"] = []
+	dwg=ezdxf.readfile(dxf_file_name)
+	mod=dwg.modelspace()
 	for e in mod:
 		if e.dxftype() == 'LINE' and e.dxf.layer=="border":
+			#print "LINE on layer: {}\n".format(  e.dxf.layer)
+			#print "start point: {}".format(  e.dxf.start)
+			#print "end point: {}".format(  e.dxf.end)
 			board["boarders"].append([e.dxf.start, e.dxf.end])
 		if e.dxftype() == 'LINE' and e.dxf.layer=="glue_lines":
+			#print "LINE on layer: {}\n".format(  e.dxf.layer)
+			#print "start point: {}".format(  e.dxf.start)
+			#print "end point: {}".format(  e.dxf.end)
 			board["glue_lines"].append([e.dxf.start, e.dxf.end])
 			board["glue_lines_w"].append(chosen_lw)
 			board["glue_lines_p"].append(chosen_lw)
 		if e.dxftype() == 'LINE' and e.dxf.layer=="glue_zigzag":
+			#print "LINE on layer: {}\n".format(  e.dxf.layer)
+			#print "start point: {}".format(  e.dxf.start)
+			#print "end point: {}".format(  e.dxf.end)
 			board["glue_zigzag"].append([e.dxf.start, e.dxf.end])
 			board["glue_zigzag_w"].append(chosen_lw)
 			board["glue_zigzag_p"].append(chosen_lw)
 		if e.dxftype() == 'POINT' and e.dxf.layer=="glue_dots":
+			#print "Point on layer: {}".format(  e.dxf.layer)
+			#print e, dir(e), dir(e.dxf)
+			#print "point: {}\n".format(  e.dxf.location)
+			#print "end point: {}\n".format(  e.dxf.end)
 			if e.dxf.location not in board["glue_dots"]: board["glue_dots"].append(e.dxf.location)
 	return board
 	
-def draw_board(board, machine, offset=MIN_OFFSET, hight=BOARDS_CFG['hight_2']):
-
-	# Draw the borders (to be removed)
+def draw_board(board, machine, offset=MIN_OFFSET):
 	print "-drawing borders"
-	draw_lines(board["boarders"], machine, offset=offset, set_pen=True, hight=hight)
-
-	# Glue the lines
+	draw_lines(board["boarders"], machine, offset=offset, set_pen=True)
 	print "-gluing lines"
-	draw_lines(board["glue_lines"], machine, offset=offset, lines_w=board["glue_lines_w"], pressue_v=board["glue_lines_p"], hight=hight)
+	draw_lines(board["glue_lines"], machine, offset=offset, lines_w=board["glue_lines_w"], pressue_v=board["glue_lines_p"])
 	print "-gluing zigzag"
-	draw_lines(board["glue_zigzag"], machine, offset=offset, lines_w=board["glue_zigzag_w"], pressue_v=board["glue_zigzag_p"], hight=hight)
-	
-	# Glue the lines (still needed?)
+	draw_lines(board["glue_zigzag"], machine, offset=offset, lines_w=board["glue_zigzag_w"], pressue_v=board["glue_zigzag_p"])
 	print "-gluing dots"
 	#draw_dots(board["glue_dots"], machine, offset=offset)
 	
 def offset_test(offset):
-	
-	# Test if offset will not be out of range
 	if offset[0] < MIN_OFFSET[0]: raise ValueError("DANGER: x offset to low, nozzle will collide with rack.")
 	if offset[1] < MIN_OFFSET[1]: print("WARNING: y offset lower then MIN_OFFSET[y], may draw out of range.")
 	
 def sum_offsets(offset1, offset2):
-
-	# Sum two offsets
 	if len(offset1) != len(offset2): raise ValueError("sum_offsets: offsets not of equal length")
 	new_offset = []
 	for i in range(len(offset1)):
 		new_offset.append(offset1[i] + offset2[i])
 	return new_offset
-			
+		
+	
+
 if __name__=="__main__":
 	start = time.time()
-	print "-----create G code handler-----"
+	print "-----generate G code-----"
 	machine=gcode()
 	
 	print "-----machine initialisation-----"
@@ -464,54 +385,11 @@ if __name__=="__main__":
 	
 	start_t = time.time()
 	print "-----starting line width test-----"
-	do_test = raw_input(" Do you want to do a line width test? (y/n) ")
-	if do_test == "n" or do_test == "no": 
-		chosen_lw = raw_input("Choose line width from 1 to 5: ")
-		try:
-			chosen_lw = int(chosen_lw)
-		except:
-			print("Waring: unknown input '" + str(chosen_lw) + "', put to 0")
-			chosen_lw = 0
-		tries = 1
-		while chosen_lw not in range(1,6) and tries < 3:
-			print("Received " + str(chosen_lw) + " should be number between 1 and 5, " + str(3 - tries) + " tries left")
-			chosen_lw = raw_input("Rechoose line width from 1 to 5: ")
-			try:
-				chosen_lw = int(chosen_lw)
-			except:
-				print("Waring: unknown input '" + str(chosen_lw) + "', put to 0")
-				chosen_lw = 0
-			tries += 1
-		
-		if chosen_lw not in range(1,6): raise IOError("Linewidth not between 1 and 5")
-		print "you chose " + str(chosen_lw)
-	elif do_test == "y" or do_test == "yes": 
-	    chosen_lw = line_width_test("Line_Thickness_og.dxf", machine, offset=ST_CFG['offset'])
-	else:
-		print " Unknown answer"
-		exit()
+	chosen_lw = line_width_test("Line_Thickness_og.dxf", machine, offset=base_offset)
 	
 	start_b = time.time()
 	print "-----starting boards sequence-----"
-	board_settings = load_board("glue_og.dxf", chosen_lw)
-	chosen_h = raw_input("Choose height (1/2): ")
-	try:
-		chosen_h = int(chosen_h)
-	except:
-		print("Unknown height")
-		exit()
-	if chosen_h == 1:
-		height = BOARDS_CFG["hight_1"]
-	elif chosen_h == 2:
-		height = BOARDS_CFG["hight_2"]
-	else:
-		print("Unknown height")
-		exit()
-	#n_boards = int(raw_input("How many boards? (1 to 5): "))
-	for board in BOARDS_CFG['offsets']:
-		print "-board " + board + " in " + str(BOARDS_CFG['offsets'][board])
-		draw_board(board_settings, machine, offset=BOARDS_CFG['offsets'][board], hight=height)
-	'''
+	n_boards = int(raw_input("How many boards? (1 to 5): "))
 	if n_boards not in range(1,6):
 		print("Input was not in range, default to 1.")
 		n_boards = 1
@@ -526,7 +404,6 @@ if __name__=="__main__":
 			#ib_offset = [75 + 150*(i - 2), 250]
 		print "-board " + str(i + 1) + " in " + str(ib_offset)
 		draw_board(board, machine, offset=ib_offset)
-    '''
 	print "boards drawn"
 	
 	machine.up()

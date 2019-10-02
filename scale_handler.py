@@ -33,9 +33,10 @@ class scale_handler():
 		self.serial_p.write(command)
 	
 	def zero(self):
+		time.sleep(10)
 		self.send_command("t")
 		self.clear_buffer()
-		time.sleep(0.01)
+		time.sleep(.10)
 		self.clear_buffer()
 	
 	def calibrate(self, option="g", clear_time=None):

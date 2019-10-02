@@ -1,156 +1,222 @@
-from gcode_handler import gcode_handler
-
+from glueing_cfg import JIG_OFFSET_CFG
+from gcode_handler import gcode_handler, drawing
+import math
 import time
-def find_pos(machiene):
-	pass
-	
-def find_angle(machiene):
-	pass
+import json
+import random
 
-class probe:
-		def __init__(self, machine):
-			self.machine=machine
-			self.z=0
-			self.x=0
-			self.y=0
-	#	def set_axis(self,axis="x+"):
-			#x, y: axis
-			# +/-: direction of probing
-	#		self.axis=axis #not defined in constructor to avoid preconfig
-		def probe_z(self,x,y,threshold=19,speed=30):
-			self.machine.gotoxy(x,y)
-			self.machine.down(15)
-			self.pos=self.machine.probe_z(max_z=threshold+0.5, speed=25, up=15)
-			time.sleep(0.5)
-			self.machine.up()
-			return self.pos
-		def probe_edge(self, expected_x, expected_y, threshold, axis, step=1.0, speed=25):
-				self.start_x=expected_x
-				self.start_y=expected_y
-				
-				if "-" in axis: self.step=-step
-				else: self.step=step
-				if "x" in axis:self.start_x+=self.step #offset on the axis probed
-				if "y" in axis:self.start_y+=self.step
-				def next_pos(direction=1): #-1 for reverse
-					if "x" in axis:  self.x+=self.step*direction
-					if "y" in axis:  self.y+=self.step*direction
-				edge_detected=0
-				self.x=self.start_x
-				self.y=self.start_y
-				z_prev=0
-				while(abs(self.step)>0.1):
-					#self.machine.
-					print("probe {0:6.3f},{1:6.3f}, step={2:6.3f}".format(self.x,self.y,self.step))
-					x,y,z=self.probe_z(self.x,self.y,threshold,speed)
-					print("Z={0:6.3f}".format(z))
-					if not z_prev:z_prev=z
-					if abs(z-z_prev)>0.25: 
-						edge_detected=1
-						print("edged detected at {0:6.3f},{1:6.3f},{2:6.3f}".format(*self.pos))
-						next_pos(-2) # go one step back
-						self.step/=2.0
-						z_prev=0 #no previous measurement for next iteration
-						if abs(self.step)<=0.1:break
-					else: edge_detected=0
-					next_pos(1)
-				print("edge found around {0:6.3f},{1:6.3f},{2:6.3f}".format(*self.pos))
-				return self.pos
-						#self.machine.gotoxy()
-					
-				
-	
-def probe_y(machiene, start_x, start_y, threshold_h=18, dy=1, speed=50, up=15):
-	if dy < 0.025:
+
+def probe(machiene, start_x, start_y, dir='y+', threshold_h=19, step=1, speed=50, up=15):
+	if step < 0.025:
 		print("finished")
 		return
-	
-	machiene.up()
+	if dir[0] == 'y': 
+		pos_idx = 1
+		if dir[1] == '+':
+			d_pos = [0, step]
+		elif dir[1] == '-':
+			d_pos = [0, -step]
+		else: raise ValueError("Unknown probe direction '" + str(dir[1]) + "' should be '+' or '-'" )
+	elif dir[0] == 'x': 
+		pos_idx = 0
+		if dir[1] == '+':
+			d_pos = [step, 0]
+		elif dir[1] == '-':
+			d_pos = [-step, 0]
+		else: raise ValueError("Unknown probe direction '" + str(dir[1]) + "' should be '+' or '-'" )
+	else: raise ValueError("Unknown probe axis '" + str(dir[0]) + "' should be 'x' or 'y'")
+	#machiene.up()
 	machiene.gotoxy(start_x, start_y, speed=speed)
 	machiene.down(up)
-	pos = machiene.probe_z(speed=50, up=up)
-	print(pos)
+	pos = machiene.probe_z(speed=25, up=up, max_z = threshold_h + 1)
+	#print(pos)
 	start_z = pos[2]
 	new_z = pos[2]
-	it = 1
-	final_y = start_y
-	while new_z < threshold_h:
-		final_y = start_y + it*dy
-		machiene.gotoxy(start_x, final_y, speed=speed)
-		posy = machiene.probe_z(speed=25, up = start_z - 0.5)
-		print(posy)
-		new_z = posy[2]
-		it += 1
-	if final_y == start_y:
-		print("move back")
-		return probe_y(machiene, start_x, final_y - dy, threshold_h=threshold_h, dy=dy, speed=speed, up=up)
-	elif dy < 0.1:
-		print("edge found at " + str(final_y))
-		return [start_x, final_y]
-	else:
-		print("next")
-		return probe_y(machiene, start_x, final_y - dy, threshold_h=threshold_h, dy=(dy + 0.0)/4., speed=max((speed + 0.0)/2., 25), up=start_z - 0.5)
-
-def probe_x(machiene, start_x, start_y, threshold_h=18, dx=1, speed=25, up=15):
-	if dx < 0.025:
-		print("finished")
-		return
-	
-	machiene.up()
-	machiene.gotoxy(start_x, start_y, speed=speed)
-	machiene.down(up)
-	pos = machiene.probe_z(max_z=threshold_h+1, speed=25, up=up)
-	print(pos)
-	start_z = pos[2]
-	new_z = pos[2]
+	prev_z = pos[2]
 	it = 1
 	final_x = start_x
+	final_y = start_y
 	while new_z < threshold_h:
-		final_x = start_x - it*dx
-		machiene.gotoxy(final_x, start_y, speed=speed)
-		posy = machiene.probe_z(max_z=threshold_h+1, speed=25, up = start_z - 0.5)
-		print(posy)
+		prev_z = new_z
+		final_x = start_x + it*d_pos[0]
+		final_y = start_y + it*d_pos[1]
+		machiene.gotoxy(final_x, final_y, speed=speed)
+		posy = machiene.probe_z(speed=10, up = new_z - 0.75, max_z = threshold_h + 1)
+		#print(posy)
 		new_z = posy[2]
 		it += 1
-	if final_x == start_x:
-		print("move back")
-		return probe_x(machiene, final_x + dx, start_y, threshold_h=threshold_h, dx=dx, speed=speed, up=up)
-	elif dx < 0.1:
-		print("edge found at " + str(final_x))
-		return [final_x, start_y]
+	if final_x == start_x and final_y == start_y:
+		#print("move back")
+		return probe(machiene, final_x - d_pos[0], final_y - d_pos[1], dir=dir, threshold_h=threshold_h, step=step, speed=speed, up=up)
+	elif step < 0.1:
+		print("edge found at " + str([final_x, final_y]))
+		return [final_x, final_y]
 	else:
-		print("next")
-		return probe_x(machiene, final_x + dx, start_y, threshold_h=threshold_h, dx=(dx + 0.0)/4., speed=max((speed + 0.0)/2., 25), up=start_z - 0.5)
+		#print("next")
+		return probe(machiene, final_x - d_pos[0], final_y - d_pos[1], dir=dir, threshold_h=threshold_h, step=(step + 0.0)/4., speed=max((speed + 0.0)/2., 25), up=prev_z - 0.75)
+	
+def make_jig_coord(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1.15, load_prev=False):
+	data_fn = "prev_board_coo.py"
+	old_f = open(data_fn, "r")
+	try:
+		old_data = json.load(old_f)
+	except:
+		old_data = None
+	old_f.close()
+	if not load_prev:
+		machiene.gotoxy(x_guess, y_guess)
+		machiene.down(up)
+		th_h = machiene.probe_z(speed=25)[2] + dth
+		[x1, y1] = probe(machiene, x_guess, y_guess, threshold_h=th_h, up=th_h - 0.5 - dth)
+		machiene.up()
+		machiene.gotoxy(x_guess + dx, y_guess)
+		machiene.down(up - 4)
+		th_h = machiene.probe_z(speed=25)[2] + dth
+		[x2, y2] = probe(machiene, x_guess + dx, y_guess, threshold_h=th_h, up=th_h - 0.5 - dth, step=4, speed=100)
+		machiene.up()
+		machiene.gotoxy(x_guess, y_guess + dy)
+		machiene.down(up - 6)
+		th_h = machiene.probe_z(speed=25)[2] + dth
+		[x3, y3] = probe(machiene, x_guess, y_guess + dy, dir='x-', threshold_h=th_h + 1, step=4, speed=100, up=th_h - 0.5 - dth)
+		machiene.up()
+	
+		sin_th = (y2 - y1 + 0.)/(math.sqrt((x2 - x1 + 0.)**2 + (y2 - y1 + 0.)**2))
+		cos_th = (x2 - x1 + 0.)/(math.sqrt((x2 - x1 + 0.)**2 + (y2 - y1 + 0.)**2))
+	
+	
+		print("sin = " + str(sin_th) + ",\t theta = " + str(math.asin(sin_th)) + " (" + str(math.asin(sin_th)*180/math.pi) + ")")
+		print("cos = " + str(cos_th) + ",\t theta = " + str(math.acos(cos_th)) + " (" + str(math.acos(cos_th)*180/math.pi) + ")")
+	
+		if x1 == x2:
+			raise ValueError("make_jig_coord: first point and second point can not have the same x value")
+		if y2 == y1:
+			print("Congratz, perfectly parallel")
+			b = y1
+			a = x3
+		else:
+			tan_th = (y2 - y1 + 0.)/(x2 - x1 + 0.)
+			a = ((x3 + 0.)/tan_th + y3 - y1 + tan_th*x1)/(tan_th + 1/tan_th)
+			b = tan_th*(a - x1) + y1
+	
+		print("a = " + str(a))
+		print("b = " + str(b))
+	
+		board_coo = make_quick_func( sin=sin_th, cos=cos_th, a=a, b=b)
 		
+		board_coo_f = open(data_fn, "w")
+		
+		data = {
+			"sin": sin_th,
+			"cos": cos_th,
+			"offset_x": a,
+			"offset_y": b,
+		}
+		
+		board_coo_f.write(json.dumps(data))
+		board_coo_f.close()
+		return board_coo
+	else:
+		if old_data is None: raise ValueError("No previous board data found ( " + data_fn + " empty?)")
+		board_coo = make_quick_func( sin=old_data["sin"], cos=old_data["cos"], a=old_data["offset_x"], b=old_data["offset_y"])
+		return board_coo
+	
+def make_quick_func( sin=0, cos=1, a=80, b=110):
+	def board_coo(x=None, y=None, pos=None):
+		if pos is None and (x is None or y is None): raise ValueError("x, y and pos can't both be None")
+		if pos is None:
+			x_temp = x
+			y_temp = y
+		else:
+			x_temp = pos[0]
+			y_temp = pos[1]
+		x_m = a + (cos*x_temp - sin*y_temp)
+		y_m = b + (cos*y_temp + sin*x_temp)
+		return [x_m, y_m]
+	return board_coo
+
+	
 if __name__ == "__main__":
 	machiene = gcode_handler()
 	machiene.init_code()
+	rand_off = [0,0]#[random.uniform(-0.5, 0.5), random.uniform(-0.5, 0.5)]
+	
+	start = time.time()
+	
+	# Table height
+	machiene.down(30)
+	[x_s, y_s, z_s] = machiene.probe_z(speed=25)
+	
+	# Look if Board is there, setup threshold
+	machiene.gotoxy(80+rand_off[0], 110+rand_off[1])
+	machiene.down(10)
+	[x_t, y_t, z_t] = machiene.probe_z(speed=25)
+	print([x_t, y_t, z_t])
+	if z_s - z_t < 14:
+		answer = raw_input("Difference was " + str(z_s - z_t) + " missed board? (y/n) ")
+		if answer == "y":
+			exit()
+	th = z_t-2
+	#print("threshold_h = " + str(th))
+	
+	# Setup Board orientation
+	answer = raw_input("Do you want to load previous board coordinates? (y/n) ")
+	if answer == "n": l_p = False
+	elif answer == "y": l_p = True
+	else: 
+		print("Unknown answer: '" + str(answer) + "', expected 'y' or 'n'")
+		print("Proceeding with assumed answer 'n'")
+		l_p = False
+	f = make_jig_coord(machiene, 80+rand_off[0], 110+rand_off[1], up=th, load_prev=l_p)
+	#f = make_quick_func( sin=0.0151768232425, cos=0.999884825386, a=65.0297324676, b=113.335272725)
+	print("took " + str(time.time() - start) + "s")
+	
+	# Setup Board tilt
+	data_fn = "prev_board_coo.py"
+	old_f = open(data_fn, "r")
+	try:
+		old_data = json.load(old_f)
+	except:
+		old_data = None
+	old_f.close()
+	answer = raw_input("Do you want to load previous board tilt? (y/n) ")
+	if answer == "n": l_p = False
+	elif answer == "y": l_p = True
+	else: 
+		print("Unknown answer: '" + str(answer) + "', expected 'y' or 'n'")
+		print("Proceeding with assumed answer 'n'")
+		l_p = False
+	if not l_p:
+		machiene.measure_tilt_3p(f(pos=[10, -5]), f(pos=[150, -5]), f(pos=[10, 120]), max_height=z_t-6)
+		old_data["tilt_map"] = machiene.tilt_map
+		old_data["tilt_map_og"] = machiene.tilt_map_og
+	else:
+		machiene.tilt_map = old_data["tilt_map"]
+		machiene.tilt_map_og = old_data["tilt_map_og"]
+	old_f = open(data_fn, "w")
+	old_f.write(json.dumps(old_data))
+	old_f.close()
+	
+	#machiene.gotoxy(position=f(pos=[37, 16]))
+	#machiene.down(12)
+	#ref_point = machiene.probe_z(speed=10)
+	#machiene.tilt_map_og = ref_point
+	#print(ref_point)
+	ref_point = machiene.tilt_map_og
+	#ref_h = ref_point[2] - 0.125
+	ref_h = ref_point[2] - 5.3 - 0.2 - 0.85
+	
+	# Deposit the glue 
+	#board = drawing("board_m_og.dxf", offset=BOARD_CFG["jig_offset"], hight=posy[2]-0.25, line_speed=500, line_pressure=52, coord_func=f)
+	board = drawing(
+					"board_m_og.dxf", 
+					offset=JIG_OFFSET_CFG["kapton"], 
+					hight=ref_h, 
+					line_speed=100, 
+					line_pressure=400, 
+					coord_func=f, 
+					clean_point=[x_s, y_s, z_s-1]
+					)
+	print("____draw____")
+	board.draw(machiene, lines=True, zigzag=False, delay=1)
 	
 	
-	prb=probe(machiene)
-	
-	prb.probe_edge(80,112,19,"y+")
-	
-	exit(0)
-	
-	# first y edge
-	print("first y edge")
-	machiene.gotoxy(80, 116)
-	probe_y(machiene, 80, 116)
-	machiene.up()
-	
-	# next y edge 140 mm further in x
-	print("second y edge")
-	machiene.gotoxy(220, 116)
-	probe_y(machiene, 220, 116)
-	machiene.up()
-	
-	# x edge
-	print("first x edge")
-	machiene.gotoxy(80, 116)
-	probe_x(machiene, 80, 116, threshold_h=20, dx=4, up=17)
-	machiene.up()
-	
-	print("second x edge")
-	machiene.gotoxy(80, 214)
-	probe_x(machiene, 80, 214, threshold_h=20, dx=4, up=17)

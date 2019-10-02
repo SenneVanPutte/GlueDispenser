@@ -1,0 +1,38 @@
+50
+ 0.008  0.007  0.006 in  4.61s pressure is  ON
+100
+ 0.033  0.029  0.012 in  4.53s pressure is  ON
+150
+ 0.083   0.07  0.006 in   4.6s pressure is  ON
+200
+ 0.131  0.118  0.008 in  4.53s pressure is  ON
+250
+ 0.188  0.181  0.009 in  4.58s pressure is  ON
+300
+ 0.271  0.257  0.007 in  4.52s pressure is  ON
+350
+ 0.349  0.344  0.006 in   4.6s pressure is  ON
+400
+ 0.449  0.444  0.007 in  4.52s pressure is  ON
+450
+ 0.561  0.549  0.012 in   4.6s pressure is  ON
+500
+ 0.663  0.652  0.009 in  4.53s pressure is  ON
+550
+ 0.754  0.751  0.006 in   4.6s pressure is  ON
+600
+ 0.836  0.832  0.005 in  4.53s pressure is  ON
+650
+  0.89  0.887  0.002 in  4.63s pressure is  ON
+700
+ 0.927  0.924  0.002 in  4.53s pressure is  ON
+750
+ 0.956  0.955  0.002 in  4.52s pressure is  ON
+800
+  0.99  0.986  0.002 in  4.58s pressure is  ON
+850
+ 1.021  1.019  0.002 in   4.5s pressure is  ON
+900
+ 1.059  1.055  0.003 in  4.57s pressure is  ON
+950
+ 1.095  1.092  0.002 in   4.6s pressure is  ON

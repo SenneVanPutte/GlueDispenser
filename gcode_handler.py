@@ -1,6 +1,7 @@
 import ezdxf
 import time
 import datetime
+import math
 from math import sqrt
 import signal
 import sys
@@ -12,6 +13,16 @@ from threading import Thread
 import Queue
 from glueing_cfg import BOARDS_CFG, ST_CFG, MIN_OFFSET
 #3231 phone yannick
+
+def no_filter(x=None, y=None, pos=None):
+	if pos is None and (x is None or y is None): raise ValueError("x, y and pos can't both be None")
+	if pos is None:
+		x_temp = x
+		y_temp = y
+	else:
+		x_temp = pos[0]
+		y_temp = pos[1]
+	return [x_temp, y_temp]
 
 class gcode_handler():
 	"""
@@ -49,7 +60,7 @@ class gcode_handler():
 		self.tilt_map = {}
 		self.tilt_map["x_tilt"] = 0
 		self.tilt_map["y_tilt"] = 0
-		self.tilt_map_og = [0, 0]
+		self.tilt_map_og = [0, 0, 0]
 		
 		self.log_file = open("gcode.log", "w+")
 		self.log_file.write("#\t ____START_G_CODE_SESSION____\n")
@@ -62,24 +73,31 @@ class gcode_handler():
 		response = self.serialport_pnp.readline()
 		print(response)
 	
-	def probe_z(self, max_z=48, speed=200, up=0):
+	def turn_lsz_off(self):
+		self.send_bloc("$zsx=1")
+		
+	def turn_lsz_on(self):
+		self.send_bloc("$zsx=2 ")
+	
+	def probe_z(self, max_z=48, speed=50, up=0):
 		q = Queue.Queue()
 		probe_thread = Thread(target=self.wait_probe_stop, args=(q,))
 		probe_thread.setDaemon(True)
+		self.send_bloc("$zsx=1")
+		#time.sleep(0.5)
 		probe_thread.start()
-		#self.send_bloc("$zsx=1")
-		time.sleep(0.5)
+		
 		self.send_bloc("G38.2 F{} Z{}".format(speed, max_z))
 		#self.send_bloc("G1 X0", capture_response=False)
 		probe_thread.join()
 		position = q.get()
 		#print("retrieved z value is " + str(z))
 		
-		self.send_bloc("$zsx=0")
-		time.sleep(0.5)
+		#self.send_bloc("$zsx=0")
+		#time.sleep(0.5)
 		self.down(up)
 		#time.sleep(5)
-		self.send_bloc("$zsx=1 ")
+		self.send_bloc("$zsx=2 ")
 		
 		return position
 		
@@ -232,16 +250,16 @@ class gcode_handler():
 					resp_dict = ast.literal_eval(line)
 				except:
 					resp_dict = {}
-				if "er" in resp_dict: 
-					print("######--WARNING--######")
-					print(l, line)
+				#if "er" in resp_dict: 
+					#print("######--WARNING--######")
+					#print(l, line)
 				if not line == unicode(""):
 					self.log_file.write("send bloc read: "+ line)
 			if "step" in sys.argv: raw_input("press Enter to continue")
 			self.line_number+=1
 			self.line_number%=100000 # line number wrapping, (spec)
 			
-	def down(self, hight=BOARDS_CFG['hight_1'], do_tilt=False):
+	def down(self, hight=BOARDS_CFG['hight_1'], do_tilt=True):
 		delta_x = self.x - self.tilt_map_og[0]
 		delta_y = self.y - self.tilt_map_og[1]
 		if do_tilt:
@@ -268,15 +286,18 @@ class gcode_handler():
 		self.tilt_map["x_tilt"] = x_tilt
 		self.tilt_map["y_tilt"] = y_tilt
 	
-	def measure_tilt(self, start_x, start_y, up_x, up_y):
+	def measure_tilt(self, start_x, start_y, up_x, up_y, max_height=0):
 		self.up()
 		self.set_tilt()
 		self.gotoxy( x_pos = start_x, y_pos = start_y)
-		z_start = self.probe_z()
+		self.down(max_height)
+		z_start = self.probe_z(speed=50)[2]
 		self.gotoxy( x_pos = start_x + up_x, y_pos = start_y)
-		z_xvar = self.probe_z()
+		self.down(max_height)
+		z_xvar = self.probe_z(speed=50)[2]
 		self.gotoxy( x_pos = start_x, y_pos = start_y + up_y)
-		z_yvar = self.probe_z()
+		self.down(max_height)
+		z_yvar = self.probe_z(speed=50)[2]
 		
 		delta_zx = z_xvar - z_start
 		delta_zy = z_yvar - z_start
@@ -290,8 +311,9 @@ class gcode_handler():
 		self.set_tilt(x_tilt, y_tilt)
 		self.tilt_map_og[0] = start_x
 		self.tilt_map_og[1] = start_y
+		self.tilt_map_og[2] = start_z
 		
-	def measure_tilt_3p(self, point1, point2, point3):
+	def measure_tilt_3p(self, point1, point2, point3, max_height=0):
 		#point1 is taken as the origin 
 		if point1 == point2 or point1 == point3 or point2 == point3: raise ValueError("measure_tilt_3p requires 3 different points")
 		delta_x2 = point2[0] - point1[0]
@@ -311,11 +333,24 @@ class gcode_handler():
 		self.up()
 		self.set_tilt()
 		self.gotoxy(position=point1)
-		z_1 = self.probe_z()
+		self.down(max_height)
+		p_1 = self.probe_z(speed=25)
 		self.gotoxy(position=point2)
-		z_2 = self.probe_z()
+		self.down(max_height)
+		p_2 = self.probe_z(speed=25)
+		self.gotoxy(position=point1)
 		self.gotoxy(position=point3)
-		z_3 = self.probe_z()
+		self.down(max_height)
+		p_3 = self.probe_z(speed=25)
+		
+		z_1 = p_1[2]
+		z_2 = p_2[2]
+		z_3 = p_3[2]
+		
+		delta_x2 = p_2[0] - p_1[0]
+		delta_x3 = p_3[0] - p_1[0]
+		delta_y2 = p_2[1] - p_1[1]
+		delta_y3 = p_3[1] - p_1[1]
 		
 		delta_z2 = z_2 - z_1 
 		delta_z3 = z_3 - z_1
@@ -324,29 +359,35 @@ class gcode_handler():
 		#delta_z3 = x_tilt*delta_x3 + y_tilt*delta_y3
 		
 		if delta_x2 == 0:
+			x_tilt = (delta_y3*delta_z2 - delta_y2*delta_z3 + 0.0)/(-delta_x3*delta_y2 + 0.0)
 			y_tilt = (delta_z2 + 0.0)/(delta_y2 + 0.0)
-			x_tilt = (delta_y3*delta_z2 - delta_y2*delta_z3 + 0.0)/( -delta_x3*delta_y2 + 0.0)
 		elif delta_y2 == 0:
 			x_tilt = (delta_z2 + 0.0)/(delta_x2 + 0.0)
-			y_tilt = (delta_x2*delta_z3 - delta_x2*delta_z3 + 0.0)/( -delta_x2*delta_y3 + 0.0)
+			y_tilt = (delta_x3*delta_z2 - delta_x2*delta_z3 + 0.0)/(-delta_x2*delta_y3 + 0.0)
 		else:
+			#x_tilt = ((delta_z2/delta_y2) - ((delta_z3*delta_z3)/(delta_y3*delta_x3)) + 0.0)/((delta_x2/delta_y2) - (delta_z3/delta_x3) + 0.0)
+			#y_tilt = ((delta_z3/delta_x3) - (delta_z2/delta_x2) + 0.0)/((delta_y3/delta_z3) - (delta_y2/delta_x2) + 0.0)
 			x_tilt = (delta_y3*delta_z2 - delta_y2*delta_z3 + 0.0)/(delta_x2*delta_y3 - delta_x3*delta_y2 + 0.0)
-			y_tilt = (delta_x2*delta_z3 - delta_x2*delta_z3 + 0.0)/(delta_x3*delta_y2 - delta_x2*delta_y3 + 0.0)
+			y_tilt = (delta_x3*delta_z2 - delta_x2*delta_z3 + 0.0)/(delta_x3*delta_y2 - delta_x2*delta_y3 + 0.0)
 		
 		print("x_tilt = " + str(x_tilt))
 		print("y_tilt = " + str(y_tilt))
 		
 		self.set_tilt(x_tilt, y_tilt)
-		self.tilt_map_og[0] = point1[0]
-		self.tilt_map_og[1] = point1[1]			
+		self.tilt_map_og = p_1
+		#self.tilt_map_og[0] = point1[0]
+		#self.tilt_map_og[1] = point1[1]
+		#self.tilt_map_og[2] = z_1
 	
-	def gotoxy(self, x_pos=None,y_pos=None, speed=None, position=None, do_tilt=False):
+	def gotoxy(self, x_pos=None,y_pos=None, speed=None, position=None, do_tilt=True):
 		if position is None:
 			x = x_pos
 			y = y_pos
 		else:
 			x = position[0]
 			y = position[1]
+		#delta_x = x - self.tilt_map_og[0]
+		#delta_y = y - self.tilt_map_og[1]
 		delta_x = x - self.x
 		delta_y = y - self.y
 		if do_tilt:
@@ -371,6 +412,7 @@ class gcode_handler():
 			x = position[0]
 			y = position[1]
 			z = position[2]
+		z = max(z, 0)
 		distance=sqrt((self.x-x)**2+(self.y-y)**2)
 		gcode="G1 X{} Y{} Z{} F{}".format(x,y,z,move_speed)
 		self.send_bloc(gcode)
@@ -440,6 +482,7 @@ class gcode_handler():
 		$p1pof=0.0 ;set m5 (off pressure) to 0
 		;M3 S<speed> to use
 		;
+		$zsx=2; set limit switch on in case of messup in prev
 		G61 ;e-xact path model
 		G21; select mm unit (just in case)
 		G40 ; cancel cutter radius compensation
@@ -503,14 +546,147 @@ class gcode_handler():
 		print("This is the end")
 		self.send_bloc("M30")
 		print("Turn away and count to ten")
+	
+def probe(machiene, start_x, start_y, dir='y+', threshold_h=19, step=1, speed=50, up=15):
+	if step < 0.025:
+		print("finished")
+		return
+	if dir[0] == 'y': 
+		pos_idx = 1
+		if dir[1] == '+':
+			d_pos = [0, step]
+		elif dir[1] == '-':
+			d_pos = [0, -step]
+		else: raise ValueError("Unknown probe direction '" + str(dir[1]) + "' should be '+' or '-'" )
+	elif dir[0] == 'x': 
+		pos_idx = 0
+		if dir[1] == '+':
+			d_pos = [step, 0]
+		elif dir[1] == '-':
+			d_pos = [-step, 0]
+		else: raise ValueError("Unknown probe direction '" + str(dir[1]) + "' should be '+' or '-'" )
+	else: raise ValueError("Unknown probe axis '" + str(dir[0]) + "' should be 'x' or 'y'")
+	#machiene.up()
+	machiene.gotoxy(start_x, start_y, speed=speed)
+	machiene.down(up)
+	pos = machiene.probe_z(speed=25, up=up, max_z = threshold_h + 1)
+	#print(pos)
+	start_z = pos[2]
+	new_z = pos[2]
+	prev_z = pos[2]
+	it = 1
+	final_x = start_x
+	final_y = start_y
+	while new_z < threshold_h:
+		prev_z = new_z
+		final_x = start_x + it*d_pos[0]
+		final_y = start_y + it*d_pos[1]
+		machiene.gotoxy(final_x, final_y, speed=speed)
+		posy = machiene.probe_z(speed=10, up = new_z - 0.75, max_z = threshold_h + 1)
+		#print(posy)
+		new_z = posy[2]
+		it += 1
+	if final_x == start_x and final_y == start_y:
+		#print("move back")
+		return probe(machiene, final_x - d_pos[0], final_y - d_pos[1], dir=dir, threshold_h=threshold_h, step=step, speed=speed, up=up)
+	elif step < 0.1:
+		print("edge found at " + str([final_x, final_y]))
+		return [final_x, final_y]
+	else:
+		#print("next")
+		return probe(machiene, final_x - d_pos[0], final_y - d_pos[1], dir=dir, threshold_h=threshold_h, step=(step + 0.0)/4., speed=max((speed + 0.0)/2., 25), up=prev_z - 0.75)
+	
+def make_jig_coord(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1.15, probe_x='x-', probe_y='y+', jig_file="prev_jig_coo.py", load_prev=False):
+	try:
+		old_f = open(jig_file, "r")
+		try:
+			old_data = json.load(old_f)
+		except:
+			old_data = None
+		old_f.close()
+	except IOError:
+		print('New jig coordinate file ' + jig_file + ' is beeing prepared')
+		old_data = None
+	
+	
+	if not load_prev:
+		machiene.gotoxy(x_guess, y_guess)
+		machiene.down(up)
+		th_h = machiene.probe_z(speed=25)[2] + dth
+		[x1, y1] = probe(machiene, x_guess, y_guess, dir=probe_y, threshold_h=th_h, up=th_h - 0.5 - dth)
+		machiene.up()
+		machiene.gotoxy(x_guess + dx, y_guess)
+		machiene.down(up - 4)
+		th_h = machiene.probe_z(speed=25)[2] + dth
+		[x2, y2] = probe(machiene, x_guess + dx, y_guess, dir=probe_y, threshold_h=th_h, up=th_h - 0.5 - dth, step=4, speed=100)
+		machiene.up()
+		machiene.gotoxy(x_guess, y_guess + dy)
+		machiene.down(up - 6)
+		th_h = machiene.probe_z(speed=25)[2] + dth
+		[x3, y3] = probe(machiene, x_guess, y_guess + dy, dir=probe_x, threshold_h=th_h, step=4, speed=100, up=th_h - 0.5 - dth)
+		machiene.up()
+	
+		sin_th = (y2 - y1 + 0.)/(math.sqrt((x2 - x1 + 0.)**2 + (y2 - y1 + 0.)**2))
+		cos_th = (x2 - x1 + 0.)/(math.sqrt((x2 - x1 + 0.)**2 + (y2 - y1 + 0.)**2))
+	
+	
+		print("sin = " + str(sin_th) + ",\t theta = " + str(math.asin(sin_th)) + " (" + str(math.asin(sin_th)*180/math.pi) + ")")
+		print("cos = " + str(cos_th) + ",\t theta = " + str(math.acos(cos_th)) + " (" + str(math.acos(cos_th)*180/math.pi) + ")")
+	
+		if x1 == x2:
+			raise ValueError("make_jig_coord: first point and second point can not have the same x value")
+		if y2 == y1:
+			print("Congratz, perfectly parallel")
+			b = y1
+			a = x3
+		else:
+			tan_th = (y2 - y1 + 0.)/(x2 - x1 + 0.)
+			a = ((x3 + 0.)/tan_th + y3 - y1 + tan_th*x1)/(tan_th + 1/tan_th)
+			b = tan_th*(a - x1) + y1
+	
+		print("a = " + str(a))
+		print("b = " + str(b))
+	
+		board_coo = make_quick_func( sin=sin_th, cos=cos_th, a=a, b=b)
 		
+		board_coo_f = open(jig_file, "w")
+		
+		data = {
+			"sin": sin_th,
+			"cos": cos_th,
+			"offset_x": a,
+			"offset_y": b,
+		}
+		
+		board_coo_f.write(json.dumps(data))
+		board_coo_f.close()
+		return board_coo
+	else:
+		if old_data is None: raise ValueError("No previous board data found ( " + jig_file+ " empty?)")
+		board_coo = make_quick_func( sin=old_data["sin"], cos=old_data["cos"], a=old_data["offset_x"], b=old_data["offset_y"])
+		return board_coo
+	
+def make_quick_func( sin=0, cos=1, a=80, b=110):
+	def board_coo(x=None, y=None, pos=None):
+		if pos is None and (x is None or y is None): raise ValueError("x, y and pos can't both be None")
+		if pos is None:
+			x_temp = x
+			y_temp = y
+		else:
+			x_temp = pos[0]
+			y_temp = pos[1]
+		x_m = a + (cos*x_temp - sin*y_temp)
+		y_m = b + (cos*y_temp + sin*x_temp)
+		return [x_m, y_m]
+	return board_coo	
 		
 class drawing():
 	"""
 	Drawings stored in dxf files using boarders layer, glue_lines layer, glue_zigzag layer, glue_dots layer and glue_drops layer
 	not all these layers need to be there
+	clean_point = [x, y, z] point to dip off glue drop during gluing
 	"""
-	def __init__(self, dxf_file_name, offset=MIN_OFFSET, hight=BOARDS_CFG['hight_1'], line_speed=None, line_pressure=None, speed_dict=None, pressure_dict=None):
+	def __init__(self, dxf_file_name, offset=MIN_OFFSET, hight=BOARDS_CFG['hight_1'], line_speed=None, line_pressure=None, speed_dict=None, pressure_dict=None, coord_func=no_filter, clean_point=None):
 		# Loading file
 		if line_speed is None and speed_dict is None: raise ValueError("Translation dict needed for speed line widths")
 		if line_pressure is None and pressure_dict is None: raise ValueError("Translation dict needed for pressure line colors")
@@ -521,6 +697,9 @@ class drawing():
 		mod=dwg.modelspace()
 		
 		self.offset = offset
+		self.coord_func = coord_func
+		
+		self.clean_point = clean_point
 
 		# Declare and fill variables from the file
 		self.drawing = {}
@@ -568,7 +747,7 @@ class drawing():
 				self.drawing["glue_drops"].append(e.dxf.center)
 			#print(e.dxftype(), e.dxf.layer)
 			
-	def draw_lines(self, machine, key="boarders", set_pen=False):
+	def draw_lines(self, machine, key="boarders", set_pen=False, delay=0.1):
 		
 		# Check input config
 		hight = self.hight
@@ -582,7 +761,7 @@ class drawing():
 		except KeyError:
 			pressue_v = None
 		offset = self.offset
-		offset_test(offset)
+		#offset_test(offset)
 		if lines_w is not None and len(lines) != len(lines_w): raise IOError("draw_lines: lines and lines_w must have same length")
 		if pressue_v is not None and len(lines) != len(pressue_v): raise IOError("draw_lines: lines and pressue_v must have same length")
 		if len(lines) == 0: 
@@ -591,7 +770,7 @@ class drawing():
 		
 		# Set machine positions
 		init_move=lines[0][0]
-		machine.gotoxy(init_move[0] + offset[0], init_move[1] + offset[1])
+		machine.gotoxy(position=self.coord_func(x=init_move[0] + offset[0], y=init_move[1] + offset[1]))
 		previous_point=lines[0][0]
 		machine.down(hight)
 		if set_pen:
@@ -604,14 +783,22 @@ class drawing():
 			if startpoint!=previous_point:
 				machine.stop_pressure()
 				machine.up()
-				machine.gotoxy(startpoint[0] + offset[0], startpoint[1] + offset[1])
+				
+				if self.clean_point is not None:
+					#Clear drop
+					machine.gotoxy(position=self.clean_point[0:2])
+					machine.down(self.clean_point[2], do_tilt=False)
+					machine.up()
+				
+				#continue drawing
+				machine.gotoxy(position=self.coord_func(x=startpoint[0] + offset[0], y=startpoint[1] + offset[1]))
 				machine.down(hight)
 			#goto end point
-			if pressue_v is not None: machine.set_pressure(pressue_v[i])
+			if pressue_v is not None: machine.set_pressure(pressue_v[i], glue_delay=delay)
 			if lines_w is None:
-				machine.gotoxy(endpoint[0] + offset[0], endpoint[1] + offset[1])
+				machine.gotoxy(position=self.coord_func(x=endpoint[0] + offset[0], y=endpoint[1] + offset[1]))
 			else:
-				machine.gotoxy(endpoint[0] + offset[0], endpoint[1] + offset[1], lines_w[i])
+				machine.gotoxy(position=self.coord_func(x=endpoint[0] + offset[0], y=endpoint[1] + offset[1]), speed=lines_w[i])
 			previous_point=endpoint
 		machine.stop_pressure()
 		machine.up()
@@ -623,9 +810,9 @@ class drawing():
 			dots = self.drawing["glue_dots"]
 		except KeyError:
 			raise IOError("No glue_dots found in " + self.file_name)
-		offset_test(offset)
+		#offset_test(offset)
 		machine.up()
-		machine.gotoxy(dots[0][0] + offset[0], dots[0][1] + offset[1])
+		machine.gotoxy(position=self.coord_func(x=dots[0][0] + offset[0], y=dots[0][1] + offset[1]))
 	
 		if set_pen:
 			machine.down(hight)
@@ -645,14 +832,14 @@ class drawing():
 		print("glue_drops", self.drawing["glue_drops"])
 		drop_point = self.drawing["glue_drops"][index]
 		offset = self.offset
-		machine.gotoxy(drop_point[0] + offset[0], drop_point[1] + offset[1])
+		machine.gotoxy(position=self.coord_func(x=drop_point[0] + offset[0], y=drop_point[1] + offset[1]))
 		#machine.down(proper_hight)
 		machine.set_pressure(pressure, no_flush=False)
 		time.sleep(drop_time)
 		machine.stop_pressure()
 		#machine.up()
 	
-	def draw(self, machine, boarders=False, lines=True, zigzag=True, dots=False):
+	def draw(self, machine, boarders=False, lines=True, zigzag=True, dots=False, delay=1):
 
 		# Draw the borders (to be removed)
 		#answer = raw_input("Do you want to draw the borders? (y/n) ")
@@ -666,12 +853,12 @@ class drawing():
 			#answer = raw_input("Do you want to draw glue lines? (y/n) ")
 			if lines:
 				print "-gluing lines"
-				self.draw_lines(machine, key="glue_lines", set_pen=True)
+				self.draw_lines(machine, key="glue_lines", delay=delay)
 		if not self.drawing["glue_zigzag"] == []:
 			#answer = raw_input("Do you want to draw glue zigzags? (y/n) ")
 			if zigzag:
 				print "-gluing zigzag"
-				self.draw_lines(machine, key="glue_zigzag")
+				self.draw_lines(machine, key="glue_zigzag", delay=delay)
 		if not self.drawing["glue_dots"] == []:
 			#answer = raw_input("Do you want to draw glue dots? (y/n) ")
 			if dots:
@@ -683,6 +870,4 @@ def offset_test(offset):
 	# Test if offset will not be out of range
 	if offset[0] < MIN_OFFSET[0]: raise ValueError("DANGER: x offset to low, nozzle will collide with rack.")
 	if offset[1] < MIN_OFFSET[1]: print("WARNING: y offset lower then MIN_OFFSET[y], may draw out of range.")
-	
-	
-	
+

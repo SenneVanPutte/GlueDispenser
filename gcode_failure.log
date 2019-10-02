@@ -1,0 +1,638 @@
+#	 ____START_G_CODE_SESSION____
+#	 TIME: 19-02-20 18:13:21
+send bloc read: [ex]  enable flow control         1 [0=off,1=XON/XOFF, 2=RTS/CTS]
+send bloc read: tinyg [mm] ok> 
+send bloc read: tinyg [mm] ok> 
+send bloc read: [ej]  enable json mode            0 [0=text,1=JSON]
+send bloc read: tinyg [mm] ok> 
+send bloc read: tinyg [mm] ok> 
+send bloc read: [ec]  expand LF to CRLF on TX     0 [0=off,1=on]
+send bloc read: tinyg [mm] ok> 
+send bloc read: tinyg [mm] ok> 
+send bloc read: [ee]  enable echo                 1 [0=off,1=on]
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: $jv=3{"gc":"G4 P0.2"}
+send bloc read: [jv]  json verbosity              3 [0=silent,1=footer,2=messages,3=configs,4=linenum,5=verbose]
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: $js=1{"gc":"G4 P0.2"}
+send bloc read: [js]  json serialize style        1 [0=relaxed,1=strict]
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: $sv=2{"gc":"G4 P0.2"}
+send bloc read: [sv]  status report verbosity     2 [0=off,1=filtered,2=verbose]
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: {"gc":"N00007 "}
+send bloc read: {"r":{},"f":[1,0,17,76]}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":0.000,"posa":0.000,"feed":0.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":1}}
+send bloc read: 
+send bloc read: $p1frq=10000{"gc":"G4 P0.2"}
+send bloc read: [p1frq] pwm frequency             10000 Hz
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: $p1csl=0{"gc":"G4 P0.2"}
+send bloc read: [p1csl] pwm cw speed lo               0 RPM
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: $p1csh=5700{"gc":"G4 P0.2"}
+send bloc read: [p1csh] pwm cw speed hi            5700 RPM
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: $p1cpl=0.0{"gc":"G4 P0.2"}
+send bloc read: [p1cpl] pwm cw phase lo           0.000 [0..1]
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: $p1cph=1.0{"gc":"G4 P0.2"}
+send bloc read: [p1cph] pwm cw phase hi           1.000 [0..1]
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: $p1pof=0.0{"gc":"G4 P0.2"}
+send bloc read: [p1pof] pwm phase off             0.000 [0..1]
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: {"gc":"N00014 "}
+send bloc read: {"r":{},"f":[1,0,17,76]}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":0.000,"posa":0.000,"feed":0.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":1}}
+send bloc read: 
+send bloc read: {"gc":"N00015 "}
+send bloc read: {"r":{},"f":[1,0,17,76]}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":0.000,"posa":0.000,"feed":0.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":1}}
+send bloc read: 
+send bloc read: {"gc":"N00016 G61 "}
+send bloc read: {"r":{},"f":[1,0,21,101]}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":0.000,"posa":0.000,"feed":0.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":1}}
+send bloc read: 
+send bloc read: {"gc":"N00017 G21"}
+send bloc read: {"r":{},"f":[1,0,20,100]}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":0.000,"posa":0.000,"feed":0.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":1}}
+send bloc read: 
+send bloc read: {"gc":"N00018 G40 "}
+send bloc read: {"r":{},"f":[1,0,21,101]}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":0.000,"posa":0.000,"feed":0.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":1}}
+send bloc read: 
+send bloc read: {"gc":"N00019 G28.2 Z0 "}
+send bloc read: {"r":{},"f":[1,0,26,106]}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":0.000,"posa":0.000,"feed":0.00,"vel":0.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":-7.167,"posa":0.000,"feed":1000.00,"vel":1000.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":-15.250,"posa":0.000,"feed":1000.00,"vel":1000.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":-20.667,"posa":0.000,"feed":1000.00,"vel":0.08,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":-19.886,"posa":0.000,"feed":100.00,"vel":100.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":-19.070,"posa":0.000,"feed":100.00,"vel":100.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":-18.263,"posa":0.000,"feed":100.00,"vel":100.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":-18.140,"posa":0.000,"feed":100.00,"vel":0.22,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":-78.000,"posa":0.000,"feed":1000.00,"vel":0.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":0.000,"posa":0.000,"feed":0.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: 
+send bloc read: {"gc":"N00020 G28.2 Y0 "}
+send bloc read: {"r":{},"f":[1,0,26,106]}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":0.000,"posa":0.000,"feed":0.00,"vel":0.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":-14.630,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2000.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":-30.793,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2000.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":-47.122,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2000.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":-63.451,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2000.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":-79.614,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2000.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":-95.943,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2000.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":-112.106,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2000.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":-122.737,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":0.30,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":-121.935,"posz":0.000,"posa":0.000,"feed":100.00,"vel":100.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":-121.127,"posz":0.000,"posa":0.000,"feed":100.00,"vel":100.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":-120.311,"posz":0.000,"posa":0.000,"feed":100.00,"vel":100.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":-119.503,"posz":0.000,"posa":0.000,"feed":100.00,"vel":100.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":-118.686,"posz":0.000,"posa":0.000,"feed":100.00,"vel":100.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":-117.878,"posz":0.000,"posa":0.000,"feed":100.00,"vel":100.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":-117.062,"posz":0.000,"posa":0.000,"feed":100.00,"vel":100.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":-116.245,"posz":0.000,"posa":0.000,"feed":100.00,"vel":100.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":-115.894,"posz":0.000,"posa":0.000,"feed":100.00,"vel":0.85,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":-398.000,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":0.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":0.000,"posa":0.000,"feed":0.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: 
+send bloc read: {"gc":"N00021 G28.2 X0 "}
+send bloc read: {"r":{},"f":[1,0,26,106]}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":0.000,"posa":0.000,"feed":0.00,"vel":0.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":-14.797,"posy":0.000,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2000.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":-31.128,"posy":0.000,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2000.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":-47.292,"posy":0.000,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2000.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":-63.622,"posy":0.000,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2000.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":-79.787,"posy":0.000,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2000.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":-86.252,"posy":0.000,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":0.30,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":-85.459,"posy":0.000,"posz":0.000,"posa":0.000,"feed":100.00,"vel":100.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":-84.643,"posy":0.000,"posz":0.000,"posa":0.000,"feed":100.00,"vel":100.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":-83.835,"posy":0.000,"posz":0.000,"posa":0.000,"feed":100.00,"vel":100.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":-83.018,"posy":0.000,"posz":0.000,"posa":0.000,"feed":100.00,"vel":100.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":-82.202,"posy":0.000,"posz":0.000,"posa":0.000,"feed":100.00,"vel":100.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":-82.000,"posy":0.000,"posz":0.000,"posa":0.000,"feed":100.00,"vel":0.85,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":-598.000,"posy":0.000,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":0.00,"unit":1,"coor":0,"dist":1,"frmo":1,"stat":9}}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":0.000,"posa":0.000,"feed":0.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: 
+send bloc read: {"gc":"N00022 G1 Z0 F1000 "}
+send bloc read: {"r":{},"f":[1,0,29,109]}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":0.000,"posa":0.000,"feed":1000.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: 
+send bloc read: {"gc":"N00023 "}
+send bloc read: {"r":{},"f":[1,0,17,76]}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":0.000,"posa":0.000,"feed":1000.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: 
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":0.000,"posa":0.000,"feed":1000.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: {"gc":"N00024 G1 X80 Y113.0 Z0 F2000"}
+send bloc read: {"r":{},"f":[1,0,39,140]}
+send bloc read: {"sr":{"posx":0.000,"posy":0.000,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2.10,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":8.017,"posy":11.324,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2000.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":17.444,"posy":24.639,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2000.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":26.774,"posy":37.818,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2000.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":36.201,"posy":51.133,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2000.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":45.531,"posy":64.313,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2000.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":54.957,"posy":77.627,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2000.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":64.287,"posy":90.806,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2000.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":73.714,"posy":104.121,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2000.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: {"gc":"N00025 G1 Z15 F500"}
+send bloc read: {"r":{},"f":[1,0,28,108]}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":0.001,"posa":0.000,"feed":500.00,"vel":6.41,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":3.875,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":7.917,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":11.958,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.000,"posa":0.000,"feed":500.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+probe thread read: {"gc":"N00026 G38.2 F25 Z19.5"}
+probe thread read: {"r":{},"f":[1,0,32,133]}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.000,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.000,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.202,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.404,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.608,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.812,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":16.014,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":16.218,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":16.420,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":16.624,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":16.829,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: 3.000,"posz":17.031,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":17.235,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":11{"sr":{"posx":80.000,"posy":113.000,"posz":17.437,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":17.641,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":17.845,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":18.047,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":18.070,"posa":0.000,"feed":25.00,"vel":0.40,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"r":{"prb":{"e":0,"x":80.000,"y":113.000,"z":18.070,"a":0.000,"b":0.000,"c":0.000}},"f":[1,0,0,7329]}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":18.070,"posa":0.000,"feed":25.00,"vel":0.40,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":18.070,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: 
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":18.070,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+stat
+send bloc read: $zsx=0{"gc":"G4 P0.2"}
+send bloc read: [zsx] z switch max                0 [0=off,1=homing,2=limit,3=limit+homing]
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: {"gc":"N00028 G1 Z15 F500"}
+send bloc read: {"r":{},"f":[1,0,28,108]}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":18.069,"posa":0.000,"feed":500.00,"vel":6.41,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.000,"posa":0.000,"feed":500.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: $zsx=2{"gc":"G4 P0.2"}
+send bloc read: [zsx] z switch max                2 [0=off,1=homing,2=limit,3=limit+homing]
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: {"gc":"N00030 G1 Z0 F500"}
+send bloc read: {"r":{},"f":[1,0,27,107]}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":14.999,"posa":0.000,"feed":500.00,"vel":6.41,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":11.167,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":7.125,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":3.042,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":0.000,"posa":0.000,"feed":500.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: {"gc":"N00031 G1 X80 Y114.0 Z0 F2000"}
+send bloc read: {"r":{},"f":[1,0,39,140]}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2.37,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: {"gc":"N00032 G1 Z15 F500"}
+send bloc read: {"r":{},"f":[1,0,28,108]}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":0.001,"posa":0.000,"feed":500.00,"vel":6.41,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":3.875,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":7.917,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":11.958,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":15.000,"posa":0.000,"feed":500.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+probe thread read: {"gc":"N00033 G38.2 F25 Z19.5"}
+probe thread read: {"r":{},"f":[1,0,32,133]}
+probe thread read: {"sr":{"posx":80.000,"posy":114.000,"posz":15.000,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+probe thread read: {"sr":{"posx":80.000,"posy":114.000,"posz":15.000,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":15.202,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":114.000,"posz":15.404,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":15.608,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":114.000,"posz":15.810,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":16.014,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":114.000,"posz":16.218,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":16.420,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":114.000,"posz":16.624,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":16.829,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: osy":114.000,"posz":17.031,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":114.000,"posz":17.235,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"p{"sr":{"posx":80.000,"posy":114.000,"posz":17.437,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":114.000,"posz":17.641,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":17.845,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":114.000,"posz":18.047,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":18.251,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":114.000,"posz":18.453,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":18.657,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":114.000,"posz":18.861,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":19.063,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":114.000,"posz":19.267,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":19.470,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":19.480,"posa":0.000,"feed":25.00,"vel":0.40,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"r":{"prb":{"e":0,"x":80.000,"y":114.000,"z":19.480,"a":0.000,"b":0.000,"c":0.000}},"f":[1,0,0,6938]}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":19.480,"posa":0.000,"feed":25.00,"vel":0.40,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":19.480,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: 
+probe thread read: {"sr":{"posx":80.000,"posy":114.000,"posz":19.480,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+stat
+send bloc read: $zsx=0{"gc":"G4 P0.2"}
+send bloc read: [zsx] z switch max                0 [0=off,1=homing,2=limit,3=limit+homing]
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: {"gc":"N00035 G1 Z15 F500"}
+send bloc read: {"r":{},"f":[1,0,28,108]}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":19.479,"posa":0.000,"feed":500.00,"vel":6.41,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":15.582,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":15.000,"posa":0.000,"feed":500.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: $zsx=2{"gc":"G4 P0.2"}
+send bloc read: [zsx] z switch max                2 [0=off,1=homing,2=limit,3=limit+homing]
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: {"gc":"N00037 G1 Z0 F500"}
+send bloc read: {"r":{},"f":[1,0,27,107]}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":14.999,"posa":0.000,"feed":500.00,"vel":6.41,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":11.167,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":7.083,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":3.042,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":0.000,"posa":0.000,"feed":500.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: {"gc":"N00038 G1 X80 Y112.5 Z0 F2000"}
+send bloc read: {"r":{},"f":[1,0,39,140]}
+send bloc read: {"sr":{"posx":80.000,"posy":114.000,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2.36,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":112.500,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: {"gc":"N00039 G1 Z15 F500"}
+send bloc read: {"r":{},"f":[1,0,28,108]}
+send bloc read: {"sr":{"posx":80.000,"posy":112.500,"posz":0.001,"posa":0.000,"feed":500.00,"vel":6.41,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":112.500,"posz":3.875,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.500,"posz":7.917,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.500,"posz":12.000,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.500,"posz":15.000,"posa":0.000,"feed":500.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+probe thread read: {"gc":"N00040 G38.2 F25 Z19.5"}
+probe thread read: {"r":{},"f":[1,0,32,133]}
+probe thread read: {"sr":{"posx":80.000,"posy":112.500,"posz":15.000,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+probe thread read: {"sr":{"posx":80.000,"posy":112.500,"posz":15.000,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.500,"posz":15.202,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":112.500,"posz":15.406,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.500,"posz":15.608,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":112.500,"posz":15.812,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.500,"posz":16.014,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":112.500,"posz":16.218,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.500,"posz":16.422,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":112.500,"posz":16.624,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.500,"posz":16.829,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: 00,"posy":112.500,"posz":17.033,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.0{"sr":{"posx":80.000,"posy":112.500,"posz":17.235,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.500,"posz":17.439,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":112.500,"posz":17.641,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.500,"posz":17.845,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":112.500,"posz":18.030,"posa":0.000,"feed":25.00,"vel":0.40,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"r":{"prb":{"e":0,"x":80.000,"y":112.500,"z":18.030,"a":0.000,"b":0.000,"c":0.000}},"f":[1,0,0,6397]}
+prb
+send bloc read: $zsx=0{"gc":"G4 P0.2"}
+send bloc read: [zsx] z switch max                0 [0=off,1=homing,2=limit,3=limit+homing]
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: {"gc":"N00042 G1 Z15 F500"}
+send bloc read: {"r":{},"f":[1,0,28,108]}
+send bloc read: {"sr":{"posx":80.000,"posy":112.500,"posz":18.030,"posa":0.000,"feed":500.00,"vel":6.41,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":112.500,"posz":15.000,"posa":0.000,"feed":500.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: $zsx=2{"gc":"G4 P0.2"}
+send bloc read: [zsx] z switch max                2 [0=off,1=homing,2=limit,3=limit+homing]
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: {"gc":"N00044 G1 Z0 F500"}
+send bloc read: {"r":{},"f":[1,0,27,107]}
+send bloc read: {"sr":{"posx":80.000,"posy":112.500,"posz":14.999,"posa":0.000,"feed":500.00,"vel":6.41,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":112.500,"posz":11.125,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.500,"posz":7.083,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.500,"posz":3.000,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.500,"posz":0.000,"posa":0.000,"feed":500.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: {"gc":"N00045 G1 X80 Y113.0 Z0 F2000"}
+send bloc read: {"r":{},"f":[1,0,39,140]}
+send bloc read: {"sr":{"posx":80.000,"posy":112.500,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2.83,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: {"gc":"N00046 G1 Z15 F500"}
+send bloc read: {"r":{},"f":[1,0,28,108]}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":0.001,"posa":0.000,"feed":500.00,"vel":6.41,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":3.833,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":7.875,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":11.958,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.000,"posa":0.000,"feed":500.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+probe thread read: {"gc":"N00047 G38.2 F25 Z19.5"}
+probe thread read: {"r":{},"f":[1,0,32,133]}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.000,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.000,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.200,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.404,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.608,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.810,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":16.014,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":16.216,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":16.420,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":16.624,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":16.826,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: 3.000,"posz":17.031,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":17.235,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":11{"sr":{"posx":80.000,"posy":113.000,"posz":17.437,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":17.641,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":17.843,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":18.032,"posa":0.000,"feed":25.00,"vel":0.40,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"r":{"prb":{"e":0,"x":80.000,"y":113.000,"z":18.032,"a":0.000,"b":0.000,"c":0.000}},"f":[1,0,0,9972]}
+prb
+send bloc read: $zsx=0{"gc":"G4 P0.2"}
+send bloc read: [zsx] z switch max                0 [0=off,1=homing,2=limit,3=limit+homing]
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: {"gc":"N00049 G1 Z15 F500"}
+send bloc read: {"r":{},"f":[1,0,28,108]}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":18.032,"posa":0.000,"feed":500.00,"vel":6.41,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.000,"posa":0.000,"feed":500.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: $zsx=2{"gc":"G4 P0.2"}
+send bloc read: [zsx] z switch max                2 [0=off,1=homing,2=limit,3=limit+homing]
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: {"gc":"N00051 G1 Z0 F500"}
+send bloc read: {"r":{},"f":[1,0,27,107]}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":14.999,"posa":0.000,"feed":500.00,"vel":6.41,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":11.167,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":7.125,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":3.083,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":0.000,"posa":0.000,"feed":500.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: {"gc":"N00052 G1 X80 Y113.5 Z0 F2000"}
+send bloc read: {"r":{},"f":[1,0,39,140]}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2.83,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: {"gc":"N00053 G1 Z15 F500"}
+send bloc read: {"r":{},"f":[1,0,28,108]}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":0.001,"posa":0.000,"feed":500.00,"vel":6.41,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":3.875,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":7.917,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":11.958,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":15.000,"posa":0.000,"feed":500.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+probe thread read: {"gc":"N00054 G38.2 F25 Z19.5"}
+probe thread read: {"r":{},"f":[1,0,32,133]}
+probe thread read: {"sr":{"posx":80.000,"posy":113.500,"posz":15.000,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.500,"posz":15.000,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":15.202,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.500,"posz":15.404,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":15.608,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.500,"posz":15.812,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":16.014,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.500,"posz":16.218,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":16.422,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.500,"posz":16.624,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: "sr":{"posx":80.000,"posy":113.500,"posz":16.829,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {,"posy":113.500,"posz":17.031,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000{"sr":{"posx":80.000,"posy":113.500,"posz":17.235,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":17.439,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.500,"posz":17.641,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":17.845,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.500,"posz":18.049,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":18.251,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.500,"posz":18.455,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":18.657,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.500,"posz":18.861,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":19.065,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.500,"posz":19.267,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":19.430,"posa":0.000,"feed":25.00,"vel":0.40,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"r":{"prb":{"e":0,"x":80.000,"y":113.500,"z":19.430,"a":0.000,"b":0.000,"c":0.000}},"f":[1,0,0,9740]}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":19.430,"posa":0.000,"feed":25.00,"vel":0.40,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":19.430,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: 
+probe thread read: {"sr":{"posx":80.000,"posy":113.500,"posz":19.430,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+stat
+send bloc read: $zsx=0{"gc":"G4 P0.2"}
+send bloc read: [zsx] z switch max                0 [0=off,1=homing,2=limit,3=limit+homing]
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: {"gc":"N00056 G1 Z15 F500"}
+send bloc read: {"r":{},"f":[1,0,28,108]}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":19.429,"posa":0.000,"feed":500.00,"vel":6.41,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":15.581,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":15.000,"posa":0.000,"feed":500.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: $zsx=2{"gc":"G4 P0.2"}
+send bloc read: [zsx] z switch max                2 [0=off,1=homing,2=limit,3=limit+homing]
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: {"gc":"N00058 G1 Z0 F500"}
+send bloc read: {"r":{},"f":[1,0,27,107]}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":14.999,"posa":0.000,"feed":500.00,"vel":6.41,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":11.125,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":7.083,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":3.042,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":0.000,"posa":0.000,"feed":500.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: {"gc":"N00059 G1 X80 Y112.75 Z0 F2000"}
+send bloc read: {"r":{},"f":[1,0,40,162]}
+send bloc read: {"sr":{"posx":80.000,"posy":113.500,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":2.65,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":112.750,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: {"gc":"N00060 G1 Z15 F500"}
+send bloc read: {"r":{},"f":[1,0,28,108]}
+send bloc read: {"sr":{"posx":80.000,"posy":112.750,"posz":0.001,"posa":0.000,"feed":500.00,"vel":6.41,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":112.750,"posz":3.833,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.750,"posz":7.875,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.750,"posz":11.958,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.750,"posz":15.000,"posa":0.000,"feed":500.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+probe thread read: {"gc":"N00061 G38.2 F25 Z19.5"}
+probe thread read: {"r":{},"f":[1,0,32,133]}
+probe thread read: {"sr":{"posx":80.000,"posy":112.750,"posz":15.000,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+probe thread read: {"sr":{"posx":80.000,"posy":112.750,"posz":15.000,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.750,"posz":15.200,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":112.750,"posz":15.402,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.750,"posz":15.606,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":112.750,"posz":15.808,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.750,"posz":16.012,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":112.750,"posz":16.216,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.750,"posz":16.418,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":112.750,"posz":16.622,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.750,"posz":16.826,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: sy":112.750,"posz":17.028,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":112.750,"posz":17.233,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"po{"sr":{"posx":80.000,"posy":112.750,"posz":17.437,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":112.750,"posz":17.639,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.750,"posz":17.843,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":112.750,"posz":17.947,"posa":0.000,"feed":25.00,"vel":0.40,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"r":{"prb":{"e":0,"x":80.000,"y":112.750,"z":17.947,"a":0.000,"b":0.000,"c":0.000}},"f":[1,0,0,9981]}
+prb
+send bloc read: $zsx=0{"gc":"G4 P0.2"}
+send bloc read: [zsx] z switch max                0 [0=off,1=homing,2=limit,3=limit+homing]
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: {"gc":"N00063 G1 Z15 F500"}
+send bloc read: {"r":{},"f":[1,0,28,108]}
+send bloc read: {"sr":{"posx":80.000,"posy":112.750,"posz":17.946,"posa":0.000,"feed":500.00,"vel":6.41,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":112.750,"posz":15.000,"posa":0.000,"feed":500.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: $zsx=2{"gc":"G4 P0.2"}
+send bloc read: [zsx] z switch max                2 [0=off,1=homing,2=limit,3=limit+homing]
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: {"gc":"N00065 G1 Z0 F500"}
+send bloc read: {"r":{},"f":[1,0,27,107]}
+send bloc read: {"sr":{"posx":80.000,"posy":112.750,"posz":14.999,"posa":0.000,"feed":500.00,"vel":6.41,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":112.750,"posz":11.167,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.750,"posz":7.083,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.750,"posz":3.042,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":112.750,"posz":0.000,"posa":0.000,"feed":500.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: {"gc":"N00066 G1 X80 Y113.0 Z0 F2000"}
+send bloc read: {"r":{},"f":[1,0,39,140]}
+send bloc read: {"sr":{"posx":80.000,"posy":112.750,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":4.01,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: {"gc":"N00067 G1 Z15 F500"}
+send bloc read: {"r":{},"f":[1,0,28,108]}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":0.001,"posa":0.000,"feed":500.00,"vel":6.41,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":3.833,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":7.875,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":11.958,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.000,"posa":0.000,"feed":500.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+probe thread read: {"gc":"N00068 G38.2 F25 Z19.5"}
+probe thread read: {"r":{},"f":[1,0,32,133]}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.000,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.000,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.200,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.402,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.606,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.810,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":16.012,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":16.216,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":16.420,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":16.622,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":16.826,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: sy":113.000,"posz":17.031,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":17.233,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"po{"sr":{"posx":80.000,"posy":113.000,"posz":17.437,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":17.641,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":17.843,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":18.047,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":18.182,"posa":0.000,"feed":25.00,"vel":0.40,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"r":{"prb":{"e":0,"x":80.000,"y":113.000,"z":18.182,"a":0.000,"b":0.000,"c":0.000}},"f":[1,0,0,5150]}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":18.182,"posa":0.000,"feed":25.00,"vel":0.40,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":18.182,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: 
+probe thread read: {"sr":{"posx":80.000,"posy":113.000,"posz":18.182,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+stat
+send bloc read: $zsx=0{"gc":"G4 P0.2"}
+send bloc read: [zsx] z switch max                0 [0=off,1=homing,2=limit,3=limit+homing]
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: {"gc":"N00070 G1 Z15 F500"}
+send bloc read: {"r":{},"f":[1,0,28,108]}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":18.182,"posa":0.000,"feed":500.00,"vel":6.41,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":15.000,"posa":0.000,"feed":500.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: $zsx=2{"gc":"G4 P0.2"}
+send bloc read: [zsx] z switch max                2 [0=off,1=homing,2=limit,3=limit+homing]
+send bloc read: tinyg [mm] ok> 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 
+send bloc read: {"gc":"N00072 G1 Z0 F500"}
+send bloc read: {"r":{},"f":[1,0,27,107]}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":14.999,"posa":0.000,"feed":500.00,"vel":6.41,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":11.125,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":7.083,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":3.042,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":0.000,"posa":0.000,"feed":500.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: {"gc":"N00073 G1 X80 Y113.25 Z0 F2000"}
+send bloc read: {"r":{},"f":[1,0,40,162]}
+send bloc read: {"sr":{"posx":80.000,"posy":113.000,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":4.01,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":113.250,"posz":0.000,"posa":0.000,"feed":2000.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: {"gc":"N00074 G1 Z15 F500"}
+send bloc read: {"r":{},"f":[1,0,28,108]}
+send bloc read: {"sr":{"posx":80.000,"posy":113.250,"posz":0.001,"posa":0.000,"feed":500.00,"vel":6.41,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: 
+send bloc read: {"sr":{"posx":80.000,"posy":113.250,"posz":3.833,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.250,"posz":7.917,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.250,"posz":11.958,"posa":0.000,"feed":500.00,"vel":500.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":5}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.250,"posz":15.000,"posa":0.000,"feed":500.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+probe thread read: {"gc":"N00075 G38.2 F25 Z19.5"}
+probe thread read: {"r":{},"f":[1,0,32,133]}
+probe thread read: {"sr":{"posx":80.000,"posy":113.250,"posz":15.000,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.250,"posz":15.000,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.250,"posz":15.200,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.250,"posz":15.404,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.250,"posz":15.608,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.250,"posz":15.810,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.250,"posz":16.014,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.250,"posz":16.218,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.250,"posz":16.420,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.250,"posz":16.624,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.250,"posz":16.829,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: :113.250,"posz":17.031,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy"{"sr":{"posx":80.000,"posy":113.250,"posz":17.235,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.250,"posz":17.437,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.250,"posz":17.641,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.250,"posz":17.845,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.250,"posz":18.047,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.250,"posz":18.251,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.250,"posz":18.455,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.250,"posz":18.657,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.250,"posz":18.861,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.250,"posz":19.065,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+probe thread read: {"sr":{"posx":80.000,"posy":113.250,"posz":19.267,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.250,"posz":19.472,"posa":0.000,"feed":25.00,"vel":25.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.250,"posz":19.500,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"r":{"prb":{"e":0,"x":80.000,"y":113.250,"z":19.501,"a":0.000,"b":0.000,"c":0.000}},"f":[1,0,0,1420]}
+send bloc read: {"sr":{"posx":80.000,"posy":113.250,"posz":19.501,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":0,"dist":0,"frmo":1,"stat":7}}
+send bloc read: {"sr":{"posx":80.000,"posy":113.250,"posz":19.501,"posa":0.000,"feed":25.00,"vel":0.00,"unit":1,"coor":1,"dist":0,"frmo":1,"stat":3}}
+send bloc read: 
+probe thread read: {"er":{"fb":440.20,"st":204,"msg":"Limit switch hit - Shutdown occurred"}}
+send bloc read: $zsx=0{"gc":"G4 P0.2"}
+send bloc read: tinyg [mm] err: Machine is alarmed - Command not processed: $zsx=0{"gc":"G4 P0.2"} 
+send bloc read: 
+send bloc read: tinyg [mm] ok> 

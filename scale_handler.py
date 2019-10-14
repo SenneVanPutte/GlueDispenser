@@ -204,7 +204,7 @@ class scale_handler():
 				cmd_queue.task_done()
 		return 
 	
-	def read_out_flow(self, machiene, pressure, time_ba, mass_lim, display=True, dt_print=0.5):
+	def read_out_flow(self, machiene, pressure, time_ba, mass_lim, display=True, dt_print=0.5, time_out=30):
 		"""
 		Read scale till 'mass_limit' in mg is accumulated on scale.
 		machiene = gcode_handler object
@@ -216,7 +216,6 @@ class scale_handler():
 		pressure_thread.setDaemon(True)
 		
 		th_mass = mass_lim/1000.
-		time_out = 30
 		data = []
 		redo = False
 		plot_th = 0
@@ -246,7 +245,6 @@ class scale_handler():
 				data.append((time.time(), value))
 			if waiting_befor and time.time() - start_b > time_ba:
 				# Go from waiting to measuring
-				print('stop waiting before')
 				avg_mass = (sum(mass_b) + 0.)/(len(mass_b) + 0.)
 				start_m = time.time()
 				waiting_befor = False
@@ -342,43 +340,49 @@ def record_pressure(machiene, scale, pressure, duration, wait_time):
 	measure_thread.join()
 	return data
 	
-def measure_flow(machiene, scale, pressure, duration, wait_time, mass_threshold):
-	max_retry = 3
+def measure_flow(machiene, scale, pressure, wait_time, mass_lim, mass_threshold, show_data=True, time_out=30):
+	max_retry = 1
 	attempt = 0
 	redo = True
 	while redo and attempt < max_retry:
 		attempt += 1
-		data = record_pressure(machiene, scale, pressure, duration, wait_time)
-		delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn, redo = calc_delay_and_flow(data, mass_threshold, scale, wait_time)
-	if redo and attempt >= max_retry: raise ValueError('measure_flow failed after ' + str(max_retry)+ ' attempts wit pressure ' + str(pressure) + 'mbar, mass threshold ' + str(mass_threshold) + 'g and duration ' + str(duration)+'s')
-	return data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn
-	
-def measure_flow2(machiene, scale, pressure, wait_time, mass_lim, mass_threshold):
-	max_retry = 3
-	attempt = 0
-	redo = True
-	while redo and attempt < max_retry:
-		attempt += 1
-		data, redo = scale.read_out_flow(machiene, pressure, wait_time, mass_lim, display=True, dt_print=0.5)
+		data, redo = scale.read_out_flow(machiene, pressure, wait_time, mass_lim, display=True, dt_print=0.5, time_out=time_out)
 		if not redo:
 			delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn, redo = calc_delay_and_flow(data, mass_threshold, scale, wait_time)
-	if redo and attempt >= max_retry: raise ValueError('measure_flow failed after ' + str(max_retry)+ ' attempts wit pressure ' + str(pressure) + 'mbar, mass threshold ' + str(mass_threshold) + 'g and duration ' + str(duration)+'s')
-	return data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn
+		if not redo and show_data:
+			lin_fit = {}
+			lin_fit['Fit_x'] = x_sim
+			lin_fit['Fit_y'] = y_sim
+			lin_fit['Fit_style'] = 'r'
+			lin_fit['FitUp_x'] = x_sim
+			lin_fit['FitUp_y'] = y_sim_up
+			lin_fit['FitUp_style'] = 'y--'
+			lin_fit['FitDn_x'] = x_sim
+			lin_fit['FitDn_y'] = y_sim_dn
+			lin_fit['FitDn_style'] = 'y--'
 
-def delay_and_flow_regulation2(machiene, scale, pos, init_pressure, desired_flow, precision=1, duration=5, threshold=20, show_data=True, init=True):
+			scale.plot_data(data, extra_plots=lin_fit)
+	#if redo and attempt >= max_retry: raise ValueError('measure_flow failed after ' + str(max_retry)+ ' attempts wit pressure ' + str(pressure) + 'mbar, mass threshold ' + str(mass_threshold) + 'g and duration ' + str(duration)+'s')
+	if redo and attempt >= max_retry: print('measure_flow failed after ' + str(max_retry)+ ' attempts wit pressure ' + str(pressure) + 'mbar, mass threshold ' + str(mass_threshold) + 'g and duration ' + str(duration)+'s')
+	return data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn, redo
+
+def delay_and_flow_regulation(machiene, scale, pos, init_pressure, desired_flow, precision=1, mass_limit=200, threshold=20, show_data=True, init=True):
 	'''
 	pos in [x, y, z]
 	pressure in mbar
+	mass_limit is the mass that accumulates in mg per flow measurement 
 	threshold in mg (wait for threshold to start flow measurement)
 	desired flow in mg/s (750 mm/s => 17 s/board + 200 mg/board =>  11 or 12 mg/s)
 	'''
+
 	machiene.gotoxyz(position=pos)
 	scale_height = machiene.probe_z(speed=25)[2]
 	needle_height = scale_height - 1
 	
-	n_samples = 50
+	n_samples = 30
 	relaxation_time = n_samples*scale.read_freq
 	#relaxation_time = scale.read_freq*scale.n_avg
+	time_out = 30.
 	
 	if init: scale.zero()
 	
@@ -387,20 +391,26 @@ def delay_and_flow_regulation2(machiene, scale, pos, init_pressure, desired_flow
 	# TODO: Start scale for duration store in data
 	pressure = init_pressure
 	th = (threshold + 0.)/(1000 + 0.)
-	lin_fit = {}
 	
-	data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn = measure_flow(machiene, scale, pressure, duration, relaxation_time, th)
-
-	lin_fit['Fit_x'] = x_sim
-	lin_fit['Fit_y'] = y_sim
-	lin_fit['FitUp_x'] = x_sim
-	lin_fit['FitUp_y'] = y_sim_up
-	lin_fit['FitUp_style'] = 'r--'
-	lin_fit['FitDn_x'] = x_sim
-	lin_fit['FitDn_y'] = y_sim_dn
-	lin_fit['FitDn_style'] = 'r--'
-
-	if show_data: scale.plot_data(data, extra_plots=lin_fit)
+	def meas_f(machiene, scale, pressure, relaxation_time, mass_limit, th, show_data=show_data, time_out=time_out):
+		redo = True
+		attempt = 0
+		max_attempts = 2
+		while redo:
+			attempt +=1
+			if attempt > max_attempts: raise ValueError('Flow measurement failed after ' + str(max_attempts) + ' attempts' )
+			data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn, redo = measure_flow(machiene, scale, pressure, relaxation_time, mass_limit, th, show_data=show_data, time_out=time_out)
+			if redo:
+				print('Flow measurement failed.')
+				if pressure < 50:
+					raise ValueError('Pressure to low. Smaller needle?')
+				elif (desired_flow + 0.)*time_out < mass_limit:
+					time_out = (mass_limit + 0.)/(desired_flow + 0.) + 5.
+					print('time out time adjusted: '+time_out + 's')
+				else: raise ValueError('Flow measurement failed for unknown reason')
+		return data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn
+		
+	data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn = meas_f(machiene, scale, pressure, relaxation_time, mass_limit, th, show_data=show_data)
 	
 	while abs(flow - desired_flow) > precision:
 		scale.zero()
@@ -409,18 +419,7 @@ def delay_and_flow_regulation2(machiene, scale, pos, init_pressure, desired_flow
 		factor = min(max(factor, 0.1),10)
 		pressure = factor*pressure
 		
-		data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn = measure_flow(machiene, scale, pressure, duration, relaxation_time, th)
-
-		lin_fit['Fit_x'] = x_sim
-		lin_fit['Fit_y'] = y_sim
-		lin_fit['FitUp_x'] = x_sim
-		lin_fit['FitUp_y'] = y_sim_up
-		lin_fit['FitUp_style'] = 'r--'
-		lin_fit['FitDn_x'] = x_sim
-		lin_fit['FitDn_y'] = y_sim_dn
-		lin_fit['FitDn_style'] = 'r--'
-
-		if show_data: scale.plot_data(data, extra_plots=lin_fit)
+		data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn = meas_f(machiene, scale, pressure, relaxation_time, mass_limit, th, show_data=show_data)
 	
 	return pressure, delay, flow
  
@@ -501,7 +500,8 @@ def calc_delay_and_flow(data, th, scale, relax_time):
 	TW_TIME = numpy.vstack([tw_time_np, numpy.ones(len(tw_time_np))]).T
 	#a, b = numpy.linalg.lstsq(TW_TIME, tw_mass_np, rcond=None)[0]
 	#a, b = numpy.linalg.lstsq(TW_TIME, tw_mass_np)[0]
-	a_tmp, b_tmp, a_int, b_int = lin_reg(tw_time, tw_mass)
+	a_tmp, b_tmp, a_int, b_int, redo = lin_reg(tw_time, tw_mass)
+	if redo: return 9999, 9999, [], [], [], [], [], redo
 	print(a_tmp, b_tmp, a_int, b_int)
 	
 	extra_time = (th+0.)/(b_tmp + 0.)
@@ -512,7 +512,7 @@ def calc_delay_and_flow(data, th, scale, relax_time):
 		if entry[0] > tw_start - extra_time and entry[0] < tw_end + extra_time:
 			tw_mass_l.append(entry[1][0])
 			tw_time_l.append(entry[0] - data[0][0])
-	a, b, a_int, b_int = lin_reg(tw_time_l, tw_mass_l)
+	a, b, a_int, b_int, redo = lin_reg(tw_time_l, tw_mass_l)
 	print(a, b, a_int, b_int)
 	
 	delay = (start_w - a +0.)/(b + 0.) - relax_time
@@ -610,103 +610,8 @@ def measure_delay(machiene, scale, pos, pressure, duration=5, threshold=60, desi
 	if desired_flow is not None: pressure_guess = ((desired_flow + 0.)/(flow_estimate_mg + 0.))*pressure
 	if show_data: scale.plot_data(data)
 	return max(delay_estimate - start_t - avg_corr, 0), pressure_guess, flow_estimate_mg, data
-		
-	
-def delay_and_flow_regulation(machiene, scale, pos, init_pressure, desired_flow, precision=1, duration=5, threshold=40, show_data=True):
-	'''
-	pos in [x, y, z]
-	init_pressure in mbar
-	desired flow in mg/s (750 mm/min 182 mm => 14.56 s/board + 200 mg/board =>  13.73 mg/s)
-	threshold in mg (wait till x mg collected before the start of flow measurement)
-	'''
-	scale.zero()
-	start_mass = scale.read_mass()
-	start_time = time.time()
-	
-	delay_t, new_pressure, measured_flow, old_data = measure_delay(
-		machiene, 
-		scale, 
-		pos, 
-		init_pressure, 
-		duration=duration, 
-		threshold=threshold, 
-		desired_flow=desired_flow, 
-		init=False, 
-		)
-	print('Delay is '+str(delay_t)+' s' )
-	if show_data: scale.plot_data(old_data)
-	
-	#measured_flow = 0
-	prev_flow = measured_flow
-	#new_pressure = init_pressure
-	prev_pressure = init_pressure
-	
-	while abs(measured_flow - desired_flow) > precision:
-	
-		#machiene.down(needle_height) 
-		print("New flow regulator cycle")
-		print("Testing pressure: " + str(new_pressure) + " mbar" + ", Previous flow: " + str(prev_flow) + " mg/s")
-	
-		# TODO: Start scale for duration store in data
-		data = []
-		measure_thread = Thread(target=scale.read_out_time, args=(duration+2,), kwargs={'record': True, 'data': data})
-		measure_thread.setDaemon(True)
-		measure_thread.start()
-	
-		machiene.set_pressure(new_pressure, no_flush=False)
-		time.sleep(duration)
-		machiene.stop_pressure()
-		
-		measure_thread.join()
-		
-		init_mass = data[0][1][1]
-		final_mass = data[-1][1][1]
-		start_t = data[0][0]
-		end_t = data[-1][0]
-		
-		for entry in data:
-			#if start_t == data[0][0] and entry[1][3]: start_t = entry[0]
-			if entry[1][3]: 
-				start_t = entry[0]
-				break
-		for entry in data:
-			if start_t + delay_t + 0.5 <= entry[0]:
-				start_t = entry[0]
-				break
-		
-		measured_flow = (final_mass-init_mass+0.0)*1000/(end_t - start_t + 0.0)
-		
-		print("Measured flow: " + str(measured_flow) + " mg/s, Desired flow: " + str(desired_flow) + " mg/s, Presision: " + str(precision) + " mg/s")
-		
-		# Calculate new pressure (version1: linear scaling with pressure assumed )
-		#if new_pressure == prev_pressure:
-		#	# flow = cte * pressure => pressure = flow / cte and cte = flow / pressure
-		#	prev_pressure = new_pressure
-		#	#cte = (measured_flow + 0.)/(prev_pressure + 0.)
-		#	new_pressure = ((desired_flow + 0.)/(measured_flow + 0.))*prev_pressure
-		
-		if measured_flow > desired_flow:
-			curr_pres = new_pressure
-			if prev_pressure > new_pressure: new_pressure = new_pressure + (new_pressure - prev_pressure)
-			else: new_pressure = prev_pressure - (new_pressure - prev_pressure + 0.)/2.
-			prev_pressure = curr_pres
-		
-		elif measured_flow < desired_flow:
-			curr_pres = new_pressure
-			if prev_pressure < new_pressure: new_pressure = new_pressure + (new_pressure - prev_pressure)
-			else: new_pressure = prev_pressure - (new_pressure - prev_pressure + 0.)/2.
-			prev_pressure = curr_pres
-		
-		new_pressure = max(new_pressure, 0.)
-		prev_flow = measured_flow
-		
-	end_mass = scale.read_mass()
-	print('Took '+str(time.time() - start_time)+' s, and '+str((end_mass-start_mass)*1000) + ' mg') 
-	machiene.up()
-	return new_pressure, delay_t
-	
-	
-def flow_test(machiene, scale, pos, pressure_list, duration=5, delay_t=0, empty_check=False, show_data=True):
+				
+def flow_test(machiene, scale, pos, pressure_list, mass_lim=100, delay_t=0, empty_check=False, show_data=True):
 	machiene.gotoxyz(position=pos)
 	scale_height = machiene.probe_z(speed=25)[2]
 	needle_height = scale_height - 1
@@ -732,73 +637,7 @@ def flow_test(machiene, scale, pos, pressure_list, duration=5, delay_t=0, empty_
 	
 		machiene.down(needle_height) 
 		
-		data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn = measure_flow(machiene, scale, pres, duration, wait_time, mass_threshold)
-		
-		lin_fit = {}
-		lin_fit['Fit_x'] = x_sim
-		lin_fit['Fit_y'] = y_sim
-		lin_fit['Fit_style'] = 'r'
-		lin_fit['FitUp_x'] = x_sim
-		lin_fit['FitUp_y'] = y_sim_up
-		lin_fit['FitUp_style'] = 'y--'
-		lin_fit['FitDn_x'] = x_sim
-		lin_fit['FitDn_y'] = y_sim_dn
-		lin_fit['FitDn_style'] = 'y--'
-
-		if show_data: scale.plot_data(data, extra_plots=lin_fit)
-		
-		measured_flow = flow
-		measured_flow_up = flow_int[1]
-		measured_flow_dn = flow_int[0]
-		
-		flow_list.append(measured_flow)
-		flow_list_up.append(measured_flow_up)
-		flow_list_dn.append(measured_flow_dn)
-		
-		delay_list.append(delay)
-		
-	return flow_list, flow_list_up, flow_list_dn, delay_list
-		
-def flow_test2(machiene, scale, pos, pressure_list, mass_lim=100, delay_t=0, empty_check=False, show_data=True):
-	machiene.gotoxyz(position=pos)
-	scale_height = machiene.probe_z(speed=25)[2]
-	needle_height = scale_height - 1
-	print('needle height:' +str(needle_height))
-	scale.zero()
-	flow_list = []
-	delay_list = []
-	flow_list_up = []
-	flow_list_dn = []
-	
-	n_samples = 30
-	wait_time = n_samples*scale.read_freq
-	mass_threshold = (20+ 0.)/(1000 + 0.)
-	
-	
-	for pres in pressure_list:
-		if empty_check: 
-			machiene.turn_lsz_off()
-			raw_input('Seringe empty?')
-			machiene.turn_lsz_on()
-		time.sleep(2)
-		print(pres)
-	
-		machiene.down(needle_height) 
-		
-		data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn = measure_flow2(machiene, scale, pres, wait_time, mass_lim, mass_threshold)
-		
-		lin_fit = {}
-		lin_fit['Fit_x'] = x_sim
-		lin_fit['Fit_y'] = y_sim
-		lin_fit['Fit_style'] = 'r'
-		lin_fit['FitUp_x'] = x_sim
-		lin_fit['FitUp_y'] = y_sim_up
-		lin_fit['FitUp_style'] = 'y--'
-		lin_fit['FitDn_x'] = x_sim
-		lin_fit['FitDn_y'] = y_sim_dn
-		lin_fit['FitDn_style'] = 'y--'
-
-		if show_data: scale.plot_data(data, extra_plots=lin_fit)
+		data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn, redo = measure_flow(machiene, scale, pres, wait_time, mass_lim, mass_threshold)
 		
 		measured_flow = flow
 		measured_flow_up = flow_int[1]
@@ -818,7 +657,10 @@ def lin_reg(x, y, alpha=0.95):
 	y = a + b*x
 	'''
 	if len(x) != len(y): raise ValueError('lin_reg: input lists must be of same length')
-	if len(x) < 3: raise ValueError('lin_reg: lists must be at least length 3')
+	if len(x) < 3: 
+		print('lin_reg: lists must be at least length 3')
+		return 9999, 9999, [], [], True
+		
 	
 	n = len(x)
 	Sx = 0.
@@ -845,26 +687,8 @@ def lin_reg(x, y, alpha=0.95):
 	b_int = list(t.interval(alpha, n-2, b, s_b))
 	a_int = list(t.interval(alpha, n-2, a, s_a))
 	
-	return a, b, a_int, b_int
+	return a, b, a_int, b_int, False
 	
-	# x_sum = 0
-	# y_sum = 0
-	# for it in range(len(x)):
-		# x_sum += float(x[it])
-		# y_sum += float(y[it])
-
-	# x_mean = x_sum/(len(x) + 0.)
-	# y_mean = y_sum/(len(y) + 0.)
-
-	# cov_xy = 0
-	# var_x = 0
-	# for it in range(len(x)):
-		# cov_xy += (float(x[it]) - x_mean)*(float(y[it]) - y_mean)
-		# var_x += (float(x[it]) - x_mean)**2
-	
-	# b = cov_xy/var_x
-	# a = y_mean - b*x_mean
-	# return a, b
 		
 if __name__ == "__main__":
 	scale = scale_handler()

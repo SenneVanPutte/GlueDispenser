@@ -187,6 +187,92 @@ class scale_handler():
 		self.write_record(data)
 		return data
 	
+	def set_pressure(self, machiene, pressure, cmd_queue):
+		machiene.set_pressure(pressure, no_flush=False)
+		#cmd_queue.get()
+		#machiene.stop_pressure()
+		#return
+		pressure_on = True
+		while pressure_on:
+		
+			cmd = cmd_queue.get()
+			#exQueue.empty: cmd = '' 
+			#print('thread got cmd: "' + str(cmd) + '"')
+			if cmd == 'kill_pressure':
+				machiene.stop_pressure()
+				pressure_on = False
+				cmd_queue.task_done()
+		return 
+	
+	def read_out_flow(self, machiene, pressure, time_ba, mass_lim, display=True, dt_print=0.5):
+		"""
+		Read scale till 'mass_limit' in mg is accumulated on scale.
+		machiene = gcode_handler object
+		pressure = pressure for machiene in mbar
+		time_ba  = wait time before and after in s 
+		"""
+		cmd_queue = Queue.Queue()
+		pressure_thread = Thread(target=self.set_pressure, args=(machiene, pressure, cmd_queue))
+		pressure_thread.setDaemon(True)
+		
+		th_mass = mass_lim/1000.
+		time_out = 30
+		data = []
+		redo = False
+		plot_th = 0
+		
+		waiting_befor = True
+		waiting_after = True
+		measuring = True
+		satisfied = False
+		start_b = time.time()
+		start_m = None
+		start_a = None
+		avg_mass = None
+		mass_b = []
+		mass = 0.
+		while not satisfied:
+			value = self.read_port_h()
+			
+			if value[0] is not None:
+				mass = value[0]
+				if waiting_befor: mass_b.append(mass)
+				if time.time() - start_b > plot_th and display:
+					if value[3]: bool_str = "pressure is  ON"
+					else: bool_str = "pressure is OFF"
+					print '{:6.4} {:6.4} {:6.4} in {:5.3}s {}\r'.format(value[0], value[1], value[2], time.time() - start_b, bool_str),
+					plot_th += dt_print
+				
+				data.append((time.time(), value))
+			if waiting_befor and time.time() - start_b > time_ba:
+				# Go from waiting to measuring
+				print('stop waiting before')
+				avg_mass = (sum(mass_b) + 0.)/(len(mass_b) + 0.)
+				start_m = time.time()
+				waiting_befor = False
+				pressure_thread.start()
+			if not waiting_befor and measuring:
+				# Go from measuring to waiting after
+				if mass - avg_mass > th_mass: 
+					start_a = time.time()
+					measuring = False
+					cmd_queue.put('kill_pressure')
+				elif time.time() - start_m > time_out:
+					cmd_queue.put('kill_pressure')
+					print('read_out_flow: timed out, mass limit of '+str(mass_lim)+'mg was not met')
+					redo = True
+					break
+			if not measuring and waiting_after and time.time() - start_a > time_ba + 3:
+				# stop
+				waiting_after = False
+			satisfied = not (waiting_befor or measuring or waiting_after)
+		print('waiting for join')
+		pressure_thread.join()
+		
+		print '' 
+		self.write_record(data)
+		return data, redo
+	
 	def read_out_time_if(self, duration, condition_queue, dt_print=0.5, record=True):
 		condition_met = False
 		while not condition_met:
@@ -264,6 +350,18 @@ def measure_flow(machiene, scale, pressure, duration, wait_time, mass_threshold)
 		attempt += 1
 		data = record_pressure(machiene, scale, pressure, duration, wait_time)
 		delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn, redo = calc_delay_and_flow(data, mass_threshold, scale, wait_time)
+	if redo and attempt >= max_retry: raise ValueError('measure_flow failed after ' + str(max_retry)+ ' attempts wit pressure ' + str(pressure) + 'mbar, mass threshold ' + str(mass_threshold) + 'g and duration ' + str(duration)+'s')
+	return data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn
+	
+def measure_flow2(machiene, scale, pressure, wait_time, mass_lim, mass_threshold):
+	max_retry = 3
+	attempt = 0
+	redo = True
+	while redo and attempt < max_retry:
+		attempt += 1
+		data, redo = scale.read_out_flow(machiene, pressure, wait_time, mass_lim, display=True, dt_print=0.5)
+		if not redo:
+			delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn, redo = calc_delay_and_flow(data, mass_threshold, scale, wait_time)
 	if redo and attempt >= max_retry: raise ValueError('measure_flow failed after ' + str(max_retry)+ ' attempts wit pressure ' + str(pressure) + 'mbar, mass threshold ' + str(mass_threshold) + 'g and duration ' + str(duration)+'s')
 	return data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn
 
@@ -635,6 +733,59 @@ def flow_test(machiene, scale, pos, pressure_list, duration=5, delay_t=0, empty_
 		machiene.down(needle_height) 
 		
 		data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn = measure_flow(machiene, scale, pres, duration, wait_time, mass_threshold)
+		
+		lin_fit = {}
+		lin_fit['Fit_x'] = x_sim
+		lin_fit['Fit_y'] = y_sim
+		lin_fit['Fit_style'] = 'r'
+		lin_fit['FitUp_x'] = x_sim
+		lin_fit['FitUp_y'] = y_sim_up
+		lin_fit['FitUp_style'] = 'y--'
+		lin_fit['FitDn_x'] = x_sim
+		lin_fit['FitDn_y'] = y_sim_dn
+		lin_fit['FitDn_style'] = 'y--'
+
+		if show_data: scale.plot_data(data, extra_plots=lin_fit)
+		
+		measured_flow = flow
+		measured_flow_up = flow_int[1]
+		measured_flow_dn = flow_int[0]
+		
+		flow_list.append(measured_flow)
+		flow_list_up.append(measured_flow_up)
+		flow_list_dn.append(measured_flow_dn)
+		
+		delay_list.append(delay)
+		
+	return flow_list, flow_list_up, flow_list_dn, delay_list
+		
+def flow_test2(machiene, scale, pos, pressure_list, mass_lim=100, delay_t=0, empty_check=False, show_data=True):
+	machiene.gotoxyz(position=pos)
+	scale_height = machiene.probe_z(speed=25)[2]
+	needle_height = scale_height - 1
+	print('needle height:' +str(needle_height))
+	scale.zero()
+	flow_list = []
+	delay_list = []
+	flow_list_up = []
+	flow_list_dn = []
+	
+	n_samples = 30
+	wait_time = n_samples*scale.read_freq
+	mass_threshold = (20+ 0.)/(1000 + 0.)
+	
+	
+	for pres in pressure_list:
+		if empty_check: 
+			machiene.turn_lsz_off()
+			raw_input('Seringe empty?')
+			machiene.turn_lsz_on()
+		time.sleep(2)
+		print(pres)
+	
+		machiene.down(needle_height) 
+		
+		data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn = measure_flow2(machiene, scale, pres, wait_time, mass_lim, mass_threshold)
 		
 		lin_fit = {}
 		lin_fit['Fit_x'] = x_sim

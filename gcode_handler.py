@@ -448,9 +448,9 @@ class gcode_handler():
 		self.time_movingxy+=(time.time()-t)		
 	
 	def set_pressure(self, press, glue_delay=0.1, no_flush=True):
-		self.write_glue_log("")
+		#self.write_glue_log("")
 		self.write_glue_log("set pressure: "+str(press), time_stamp=True)
-		self.write_glue_log("")
+		#self.write_glue_log("")
 		p_gcode = "M3 S{}".format(press)
 		if not self.is_glueing:
 			if no_flush:

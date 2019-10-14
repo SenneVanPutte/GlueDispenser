@@ -9,6 +9,7 @@ import serial
 import io
 import json
 import ast
+import os
 from threading import Thread
 import Queue
 from glueing_cfg import BOARDS_CFG, ST_CFG, MIN_OFFSET
@@ -62,12 +63,35 @@ class gcode_handler():
 		self.tilt_map["y_tilt"] = 0
 		self.tilt_map_og = [0, 0, 0]
 		
-		self.log_file = open("gcode.log", "w+")
+		# Log files
+		day_str = datetime.datetime.now().strftime("%Y_%b_%d")
+		
+		record_file="gcode_"+day_str+".log"
+		if not os.path.isfile(record_file): self.log_file = open(record_file, 'w+')
+		else: self.log_file = open(record_file, 'a+')
+		#self.log_file = open("gcode.log", "w+")
 		self.log_file.write("#\t ____START_G_CODE_SESSION____\n")
-		self.log_file.write("#\t TIME: " + datetime.datetime.now().strftime("%y-%m-%d %H:%M:%S") + "\n")
+		self.log_file.write("#\t TIME: " + datetime.datetime.now().strftime("%H:%M:%S") + "\n")
+		
+		self.glue_log = "glue_"+day_str+".log"
+		if not os.path.isfile(self.glue_log): open(self.glue_log, 'w+')
 		
 		
 		signal.signal(signal.SIGINT, self.emergency_stop)
+		
+	def init_glue_log(self):
+		log = open(self.glue_log, 'a+')
+		log.write("#\t ____START_GLUE_SESSION____\n")
+		log.write("#\t TIME: " + datetime.datetime.now().strftime("%H:%M:%S") + "\t("+str(time.time())+")" + "\n")
+		log.close()
+		
+	def write_glue_log(self, log_str, time_stamp=False):
+		log = open(self.glue_log, 'a+')
+		time_str = str(time.time())
+		if time_stamp: log.write(time_str + "\t" + log_str + "\n")
+		else: log.write(log_str + "\n")
+		log.close()
+		
 		
 	def read_buffer(self):
 		response = self.serialport_pnp.readline()
@@ -99,6 +123,7 @@ class gcode_handler():
 		#time.sleep(5)
 		self.send_bloc("$zsx=2 ")
 		
+		self.write_glue_log("probe result: "+str(position[-1]), time_stamp=True)
 		return position
 		
 	def wait_probe_stop(self, queue):
@@ -414,6 +439,7 @@ class gcode_handler():
 			z = position[2]
 		z = max(z, 0)
 		distance=sqrt((self.x-x)**2+(self.y-y)**2)
+		self.write_glue_log("move to: " +str(x)+ ", "+str(y)+", "+str(z)+ "\t speed: "+str(move_speed), time_stamp=True)
 		gcode="G1 X{} Y{} Z{} F{}".format(x,y,z,move_speed)
 		self.send_bloc(gcode)
 		self.x=x
@@ -422,6 +448,9 @@ class gcode_handler():
 		self.time_movingxy+=(time.time()-t)		
 	
 	def set_pressure(self, press, glue_delay=0.1, no_flush=True):
+		self.write_glue_log("")
+		self.write_glue_log("set pressure: "+str(press), time_stamp=True)
+		self.write_glue_log("")
 		p_gcode = "M3 S{}".format(press)
 		if not self.is_glueing:
 			if no_flush:
@@ -443,6 +472,9 @@ class gcode_handler():
 			self.send_bloc(p_gcode)
 			
 	def stop_pressure(self, glue_delay=0.1):
+		#self.write_glue_log("")
+		self.write_glue_log("stop pressure: ", time_stamp=True)
+		#self.write_glue_log("")
 		if self.is_glueing:
 			self.time_glueing += (time.time() - self.glue_start)
 			self.is_glueing = False

@@ -103,7 +103,7 @@ class gcode_handler():
 	def turn_lsz_on(self):
 		self.send_bloc("$zsx=2 ")
 	
-	def probe_z(self, max_z=48, speed=50, up=0):
+	def probe_z(self, max_z=48, speed=50, up=0, up_rel=None):
 		q = Queue.Queue()
 		probe_thread = Thread(target=self.wait_probe_stop, args=(q,))
 		probe_thread.setDaemon(True)
@@ -115,11 +115,15 @@ class gcode_handler():
 		#self.send_bloc("G1 X0", capture_response=False)
 		probe_thread.join()
 		position = q.get()
+		z_dwn = position[2]
 		#print("retrieved z value is " + str(z))
 		
 		#self.send_bloc("$zsx=0")
 		#time.sleep(0.5)
-		self.down(up)
+		if up_rel is None:
+			self.down(up)
+		else:
+			self.down(max(z_dwn - up_rel, 0))
 		#time.sleep(5)
 		self.send_bloc("$zsx=2 ")
 		
@@ -284,14 +288,17 @@ class gcode_handler():
 			self.line_number+=1
 			self.line_number%=100000 # line number wrapping, (spec)
 			
-	def down(self, hight=BOARDS_CFG['hight_1'], do_tilt=True):
+	def down(self, hight=BOARDS_CFG['hight_1'], do_tilt=True, speed=None):
 		delta_x = self.x - self.tilt_map_og[0]
 		delta_y = self.y - self.tilt_map_og[1]
 		if do_tilt:
 			z = hight + delta_x*self.tilt_map["x_tilt"] + delta_y*self.tilt_map["y_tilt"]
 		else:
 			z = hight
-		gcode="G1 Z{} F{}".format(z, self.zspeed)
+		if speed is None:
+			gcode="G1 Z{} F{}".format(z, self.zspeed)
+		else:
+			gcode="G1 Z{} F{}".format(z, speed)
 		t=time.time()
 		
 		self.send_bloc(gcode)
@@ -819,7 +826,8 @@ class drawing():
 				if self.clean_point is not None:
 					#Clear drop
 					machine.gotoxy(position=self.clean_point[0:2])
-					machine.down(self.clean_point[2], do_tilt=False)
+					machine.down(self.clean_point[2] -2, do_tilt=False)
+					machine.down(self.clean_point[2], do_tilt=False, speed=100)
 					machine.up()
 				
 				#continue drawing

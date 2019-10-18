@@ -6,7 +6,7 @@ from matplotlib import pyplot
 
 if __name__ == '__main__':
 	machiene = gcode_handler()
-	#machiene.init_code()
+	machiene.init_code()
 	
 	scale = scale_handler() 
 	#scale.conf_avg("b")
@@ -17,8 +17,10 @@ if __name__ == '__main__':
 	# desired_flow = 10
 	
 	# Water
-	pressure = 800
-	desired_flow = 10
+	pressure = 100
+	desired_flow = 5
+	#scale_pos = [0, 0, 0]
+	scale_pos = [350, 200, 0]
 	
 	#delay, delay_up, delay_dn, press_guess, data = measure_delay(machiene, scale, [0, 0, 0], pressure, duration=3, threshold=30, desired_flow=desired_flow)
 	#print('Delay is ' + str(delay) + ', uncert window: [' + str(delay_dn) + ', ' + str(delay_up)  + ']'  ) 
@@ -31,7 +33,7 @@ if __name__ == '__main__':
 	desired_press, delay_t, flow = delay_and_flow_regulation(
 								machiene, 
 								scale, 
-								[0, 0, 0], 
+								scale_pos, 
 								pressure, 
 								desired_flow, 
 								precision=1, 

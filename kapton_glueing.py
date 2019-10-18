@@ -10,17 +10,17 @@ if __name__ == '__main__':
 	machiene.init_code()
 	
 	# Table height
-	machiene.down(30)
-	[x_s, y_s, z_s] = machiene.probe_z(speed=25)
+	machiene.down(28)
+	[x_s, y_s, z_s] = machiene.probe_z(speed=50)
 	
 	# Find kapton and kapton height
 	#kapton_og = [103, 92]
 	kapton_og = [80, 110]
 	machiene.gotoxy(kapton_og[0], kapton_og[1])
-	machiene.down(10)
+	machiene.down(15)
 	[x_t, y_t, z_t] = machiene.probe_z(speed=25)
 	print([x_t, y_t, z_t])
-	if z_s - z_t < 14:
+	if z_s - z_t < 13:
 		answer = raw_input("Difference was " + str(z_s - z_t) + " missed board? (y/n) ")
 		if answer == "y":
 			exit()
@@ -85,15 +85,18 @@ if __name__ == '__main__':
 	print("Making board tilt took " + str(time.time() - start_tilt) + "s")
 	
 	# Flow Calibration
+	scale_pos = [350, 200]
 	start_flow = time.time()
 	f_c = False
 	pressure = 0
 	delay = 1
 	answer = raw_input("Do you want to do flow calibration? (y/n) ")
-	if answer == "n": f_c = False
+	if answer == "n": 
+		f_c = False
+		pressure = 4000
 	elif answer == "y": 
 		f_c = True
-		init_pressure = 100
+		init_pressure = 4000
 		scale = scale_handler() 
 		scale.calibrate()
 		scale.zero()
@@ -102,24 +105,35 @@ if __name__ == '__main__':
 		print("Proceeding with assumed answer 'n'")
 		f_c = False
 	
-	desired_flow = 15
-	if f_c: pressure, delay = delay_and_flow_regulation(
-								machiene, 
-								scale, 
-								[350, 200], 
-								init_pressure, 
-								desired_flow, 
-								precision=(desired_flow/10 + 1), 
-								duration=8, 
-								threshold=40
-								)
+	desired_flow = 10
+	measured_flow = None
+	if f_c: 
+		pressure, delay, measured_flow = delay_and_flow_regulation(
+												machiene, 
+												scale, 
+												scale_pos,  
+												init_pressure, 
+												desired_flow, 
+												precision=5, 
+												mass_limit=150, 
+												threshold=20, 
+												show_data=True, 
+												init=True
+												)
+		machiene.up()
+	
 	print('Drawing with delay of ' + str(delay) + ' s, and pressure of ' + str(pressure) + ' mbar')
 	print("Finding flow took " + str(time.time() - start_flow) + "s")
 	
 	# Prepare drawings
+	total_line_length_mm = 2*90. + 12.
+	total_mass_mg = 120.
+	if measured_flow is None: measured_flow = desired_flow
+	speed_mmPmin = total_line_length_mm/((total_mass_mg/measured_flow)/60.)
+	print('Calculated speed was: ' + str(speed_mmPmin) + ' mm/min')
 	start_draw = time.time()
 	ref_point = machiene.tilt_map_og
-	ref_h = ref_point[2] - 5.3 - 0.2 - 0.85
+	ref_h = ref_point[2] - 5.3 - 0.2 - 0.85 #jig h diff, kapton thickness, actual height above
 	kap_list = []
 	n_sen = 1
 	dx_sen = 0
@@ -133,7 +147,7 @@ if __name__ == '__main__':
 					"board_m_og.dxf", 
 					offset=kap_offset, 
 					hight=ref_h, 
-					line_speed=100, 
+					line_speed=speed_mmPmin, 
 					line_pressure=pressure, 
 					coord_func=shift_f,
 					clean_point=[x_s, y_s, z_s-1]
@@ -142,8 +156,14 @@ if __name__ == '__main__':
 					
 	
 	# Draw the kaptons
+	machiene.gotoxy(ref_point[0], ref_point[1])
+	machiene.probe_z()
+	time.sleep(1)
 	for sen in kap_list:
 		sen.draw(machiene, lines=True, zigzag=False, delay=delay)
 	print("Drawing took " + str(time.time() - start_draw) + "s")
+
+	machiene.up()
+	machiene.gotoxy(scale_pos[0], scale_pos[1])
 	
 	

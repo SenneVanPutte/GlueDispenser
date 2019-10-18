@@ -40,6 +40,13 @@ class scale_handler():
 		record_file.write("#\t TIME: " + datetime.datetime.now().strftime("%H:%M:%S") + "\n")
 		record_file.close()
 		
+		self.flow_log="flow_"+day_str+".log"
+		if not os.path.isfile(self.flow_log): record_file = open(self.flow_log, 'w')
+		else: record_file = open(self.flow_log, 'a')
+		record_file.write("#\t ____START_FLOW_SESSION____\n")
+		record_file.write("#\t TIME: " + datetime.datetime.now().strftime("%H:%M:%S") + "\n")
+		record_file.close()
+		
 		
 		
 	def init_glue_log(self):
@@ -54,7 +61,13 @@ class scale_handler():
 		if time_stamp: log.write(time_str + "\t" + log_str + "\n")
 		else: log.write(log_str + "\n")
 		log.close()
-		
+	
+	def write_flow_log(self, pressure, flow, delay):
+		log = open(self.flow_log, 'a+')
+		time_str = str(time.time())
+		log_str = 'pressure: \t' + str(pressure) + '\t flow: \t' + str(flow) + ' \t delay: \t' + str(delay) 
+		log.write(time_str + "\t" + log_str + "\n")
+		log.close()
 		
 	def send_command(self, command):
 		self.write_glue_log("")
@@ -99,8 +112,8 @@ class scale_handler():
 		h = 50g
 		'''
 		mass_str = 'Xg'
-		if option == "g": mass_str = '5.8g' 
-		elif option == "h": mass_str = '50g' 
+		if option == "g": mass_str = '1 g' 
+		elif option == "h": mass_str = '50 g' 
 		raw_input("Put " + mass_str+ " calibration weight on the scale")
 		self.send_command(option)
 		time.sleep(2)
@@ -294,7 +307,7 @@ class scale_handler():
 		record_file.close()
 			
 	
-	def plot_data(self, data, extra_plots=None):
+	def plot_data(self, data, extra_plots=None, text=None):
 		x = []
 		y = []
 		for entry in data:
@@ -321,7 +334,16 @@ class scale_handler():
 				x_temp_st = 0#min(x_temp)
 				x_temp_rel = [val - x_temp_st for val in x_temp]
 				ax.plot(x_temp_rel, y_temp, style, label=key_splt[0])
-			ax.legend()
+			ax.legend(loc='lower right')
+		
+		if not text is None:
+		    #right = min(x)+ (max(x) - min(y))*0.75
+			#bottom = min(y) + (max(y) - min(y))*0.25
+			left = 0.01
+			right = 0.99
+			top = 0.98
+			bottom = 0.01
+			pyplot.text(left, top, text, horizontalalignment='left', verticalalignment='top', transform=ax.transAxes )
 
 		ax.set(xlabel='time (s)', ylabel='mass (g)', title='')
 		pyplot.show()
@@ -341,29 +363,63 @@ def record_pressure(machiene, scale, pressure, duration, wait_time):
 	return data
 	
 def measure_flow(machiene, scale, pressure, wait_time, mass_lim, mass_threshold, show_data=True, time_out=30):
+
+	mass_th = mass_threshold/1000.
+
 	max_retry = 1
 	attempt = 0
 	redo = True
+	delay = 0
+	flow = 0
+	flow_int = [-9999, 9999]
+	x_sim = []
+	y_sim = []
+	y_sim_up = []
+	y_sim_dn = []
+	
 	while redo and attempt < max_retry:
 		attempt += 1
 		data, redo = scale.read_out_flow(machiene, pressure, wait_time, mass_lim, display=True, dt_print=0.5, time_out=time_out)
 		if not redo:
-			delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn, redo = calc_delay_and_flow(data, mass_threshold, scale, wait_time)
+			ret_dict = calc_delay_and_flow(data, mass_th, scale, wait_time)
+			delay = ret_dict['delay']
+			flow = ret_dict['flow']
+			flow_int = ret_dict['flow_int']
+			x_sim = ret_dict['x_sim']
+			y_sim = ret_dict['y_sim']
+			y_sim_up = ret_dict['y_sim_up']
+			y_sim_dn = ret_dict['y_sim_dn']
+			redo = ret_dict['redo']
+			x_st = ret_dict['x_st']
+			x_fi = ret_dict['x_fi']
+			y_st = ret_dict['y_st']
 		if not redo and show_data:
 			lin_fit = {}
 			lin_fit['Fit_x'] = x_sim
 			lin_fit['Fit_y'] = y_sim
 			lin_fit['Fit_style'] = 'r'
-			lin_fit['FitUp_x'] = x_sim
-			lin_fit['FitUp_y'] = y_sim_up
-			lin_fit['FitUp_style'] = 'y--'
-			lin_fit['FitDn_x'] = x_sim
-			lin_fit['FitDn_y'] = y_sim_dn
-			lin_fit['FitDn_style'] = 'y--'
+			lin_fit['Fit Up_x'] = x_sim
+			lin_fit['Fit Up_y'] = y_sim_up
+			lin_fit['Fit Up_style'] = 'y--'
+			lin_fit['Fit Down_x'] = x_sim
+			lin_fit['Fit Down_y'] = y_sim_dn
+			lin_fit['Fit Down_style'] = 'y--'
+			if not x_st[0] is None:
+				lin_fit['Pressure ON_x'] = x_st
+				lin_fit['Pressure ON_y'] = y_st
+				lin_fit['Pressure ON_style'] = 'c--'
+				lin_fit['Pressure OFF_x'] = x_fi
+				lin_fit['Pressure OFF_y'] = y_st
+				lin_fit['Pressure OFF_style'] = 'c--'
+			
+			fit_text = '{:.1f} mg/s \n{:.1f} mbar'.format(flow, pressure)
 
-			scale.plot_data(data, extra_plots=lin_fit)
+			scale.plot_data(data, extra_plots=lin_fit, text=fit_text)
+			scale.write_flow_log(pressure, flow, delay)
+		elif show_data:
+			scale.plot_data(data)
 	#if redo and attempt >= max_retry: raise ValueError('measure_flow failed after ' + str(max_retry)+ ' attempts wit pressure ' + str(pressure) + 'mbar, mass threshold ' + str(mass_threshold) + 'g and duration ' + str(duration)+'s')
-	if redo and attempt >= max_retry: print('measure_flow failed after ' + str(max_retry)+ ' attempts wit pressure ' + str(pressure) + 'mbar, mass threshold ' + str(mass_threshold) + 'g and duration ' + str(duration)+'s')
+	if redo and attempt >= max_retry: print('measure_flow failed after ' + str(max_retry)+ ' attempts wit pressure ' + str(pressure) + 'mbar, mass threshold ' + str(mass_threshold) + 'g and time out ' + str(time_out)+'s')
 	return data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn, redo
 
 def delay_and_flow_regulation(machiene, scale, pos, init_pressure, desired_flow, precision=1, mass_limit=200, threshold=20, show_data=True, init=True):
@@ -375,14 +431,14 @@ def delay_and_flow_regulation(machiene, scale, pos, init_pressure, desired_flow,
 	desired flow in mg/s (750 mm/s => 17 s/board + 200 mg/board =>  11 or 12 mg/s)
 	'''
 
-	machiene.gotoxyz(position=pos)
+	machiene.gotoxy(position=pos)
 	scale_height = machiene.probe_z(speed=25)[2]
 	needle_height = scale_height - 1
 	
 	n_samples = 30
 	relaxation_time = n_samples*scale.read_freq
 	#relaxation_time = scale.read_freq*scale.n_avg
-	time_out = 30.
+	time_out = 60.
 	
 	if init: scale.zero()
 	
@@ -390,7 +446,7 @@ def delay_and_flow_regulation(machiene, scale, pos, init_pressure, desired_flow,
 	
 	# TODO: Start scale for duration store in data
 	pressure = init_pressure
-	th = (threshold + 0.)/(1000 + 0.)
+	th = threshold 
 	
 	def meas_f(machiene, scale, pressure, relaxation_time, mass_limit, th, show_data=show_data, time_out=time_out):
 		redo = True
@@ -406,7 +462,7 @@ def delay_and_flow_regulation(machiene, scale, pos, init_pressure, desired_flow,
 					raise ValueError('Pressure to low. Smaller needle?')
 				elif (desired_flow + 0.)*time_out < mass_limit:
 					time_out = (mass_limit + 0.)/(desired_flow + 0.) + 5.
-					print('time out time adjusted: '+time_out + 's')
+					print('time out time adjusted: '+str(time_out) + 's')
 				else: raise ValueError('Flow measurement failed for unknown reason')
 		return data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn
 		
@@ -424,27 +480,43 @@ def delay_and_flow_regulation(machiene, scale, pos, init_pressure, desired_flow,
 	return pressure, delay, flow
  
 def calc_delay_and_flow(data, th, scale, relax_time):
+	t_pres_on = None
+	t_pres_of = None
 	start_t = data[0][0]
 	end_t = data[-1][0]
 	befor_mass = []
 	after_mass = []
 	b_mass = 0
 	a_mass = 0
+	x_tot = []
+	y_tot = []
 	for point in data:
 		cur_time = point[0]
 		cur_mass = point[1][0]
+		pres_bit = point[1][-1]
+		x_tot.append(cur_time)
+		y_tot.append(cur_mass)
+		
+		# Fixing mass window before and after
 		if cur_time < start_t + relax_time: 
 			befor_mass.append(cur_mass)
 			b_mass += cur_mass
 		if cur_time > end_t - relax_time: 
 			after_mass.append(cur_mass)
 			a_mass += cur_mass
+		
+		# Pressure times
+		if t_pres_on is None and pres_bit:
+			t_pres_on = cur_time 
+		if not t_pres_on is None:
+			if t_pres_of is None and not pres_bit:
+				t_pres_of = cur_time 
 	
 	b_mass /= len(befor_mass)
 	a_mass /= len(after_mass)
 	
-	print('avergage mass before: ' + str(b_mass) )
-	print('avergage mass after: ' + str(a_mass) )
+	#print('avergage mass before: ' + str(b_mass) )
+	#print('avergage mass after: ' + str(a_mass) )
 	
 	pressur_found = False
 	redo = False
@@ -453,10 +525,12 @@ def calc_delay_and_flow(data, th, scale, relax_time):
 	end_w = data[-1][1][0]
 	tw_start = start_t + relax_time
 	tw_end = end_t - relax_time
-	print('th hier is '+ str(th))
+	#print('th hier is '+ str(th))
 	
 	went_below = True
 	went_above = False
+	#searching = False
+	#prev_mass = None
 	for entry in data:
 		cur_time = entry[0]
 		cur_mass = entry[1][0]
@@ -470,7 +544,12 @@ def calc_delay_and_flow(data, th, scale, relax_time):
 		if cur_mass < b_mass + th: went_below = True
 		if cur_mass > b_mass + th and went_below:
 			went_below = False
+			searching = True
 			tw_start = cur_time
+			#prev_mass = cur_mass
+		#if searching:
+			#if prev_mass
+			#prev_mass = cur_mass
 	
 		if cur_mass > a_mass - th and not went_above: 
 			went_above = True
@@ -479,7 +558,8 @@ def calc_delay_and_flow(data, th, scale, relax_time):
 			
 		
 		if cur_mass < b_mass + th and cur_time < tw_start: tw_start = cur_time
-		
+	
+	if not t_pres_of is None: tw_end = t_pres_of
 	if tw_start > tw_end: 
 		scale.plot_data(data)
 		#raise ValueError('Time window messed up')
@@ -502,24 +582,36 @@ def calc_delay_and_flow(data, th, scale, relax_time):
 	#a, b = numpy.linalg.lstsq(TW_TIME, tw_mass_np)[0]
 	a_tmp, b_tmp, a_int, b_int, redo = lin_reg(tw_time, tw_mass)
 	if redo: return 9999, 9999, [], [], [], [], [], redo
-	print(a_tmp, b_tmp, a_int, b_int)
+	#print(a_tmp, b_tmp, a_int, b_int)
 	
 	extra_time = (th+0.)/(b_tmp + 0.)
-	print('Extra time: '+ str(extra_time) )
+	#print('Extra time: '+ str(extra_time) )
 	tw_mass_l = []
 	tw_time_l = []
+	tw_st_new = tw_start - extra_time
+	tw_fi_new = tw_end + extra_time
+	if not t_pres_on is None: tw_st_new = max(tw_start - extra_time, t_pres_on)
+	if not t_pres_of is None: tw_fi_new = min(tw_end + extra_time, t_pres_of)
 	for entry in data:
-		if entry[0] > tw_start - extra_time and entry[0] < tw_end + extra_time:
+		if entry[0] > tw_st_new and entry[0] < tw_fi_new:
 			tw_mass_l.append(entry[1][0])
 			tw_time_l.append(entry[0] - data[0][0])
 	a, b, a_int, b_int, redo = lin_reg(tw_time_l, tw_mass_l)
-	print(a, b, a_int, b_int)
+	#print(a, b, a_int, b_int)
 	
-	delay = (start_w - a +0.)/(b + 0.) - relax_time
+	if t_pres_on is None:
+		delay = (start_w - a +0.)/(b + 0.) - relax_time
+	else:
+		delay_tmp = (start_w - a +0.)/(b + 0.) - (t_pres_on - start_t)
+		delay = max(delay_tmp, (t_pres_on - start_t) - relax_time)
+	#print('Wait time: ' + str(relax_time) + ', Pressure on time: ' + str(t_pres_on - start_t) )
 	flow = b*1000
 	flow_int = [b_int[0]*1000, b_int[1]*1000]
 
 	print(flow, delay)
+	
+	press_int = [t_pres_on - start_t, t_pres_of - start_t]
+	
 	
 	#x_sim = [t + delay for t in tw_time]
 	x_sim = [tw_time_l[0], tw_time_l[-1]]
@@ -536,8 +628,26 @@ def calc_delay_and_flow(data, th, scale, relax_time):
 	y_sim_dn = [min(y_st), min(y_nd)]
 	#print(len(x_sim))
 	#print(len(y_sim))
+	
+	x_st = [t_pres_on - start_t, t_pres_on - start_t]
+	x_fi = [t_pres_of - start_t, t_pres_of - start_t]
+	y_st = [min(y_tot), max(y_tot)]
+	
+	return_dict = {}
+	return_dict['delay'] = delay
+	return_dict['flow'] = flow
+	return_dict['flow_int'] = flow_int
+	return_dict['x_sim'] = x_sim
+	return_dict['y_sim'] = y_sim
+	return_dict['y_sim_up'] = y_sim_up
+	return_dict['y_sim_dn'] = y_sim_dn
+	return_dict['redo'] = redo
+	return_dict['press_int'] = press_int
+	return_dict['x_st'] = x_st
+	return_dict['x_fi'] = x_fi
+	return_dict['y_st'] = y_st
 
-	return delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn, redo
+	return return_dict
 	
 		
 def measure_delay(machiene, scale, pos, pressure, duration=5, threshold=60, desired_flow=None, init=True, show_data=False):
@@ -613,7 +723,7 @@ def measure_delay(machiene, scale, pos, pressure, duration=5, threshold=60, desi
 				
 def flow_test(machiene, scale, pos, pressure_list, mass_lim=100, delay_t=0, empty_check=False, show_data=True):
 	machiene.gotoxyz(position=pos)
-	scale_height = machiene.probe_z(speed=25)[2]
+	scale_height = machiene.probe_z(speed=25, up_rel=1)[2]
 	needle_height = scale_height - 1
 	print('needle height:' +str(needle_height))
 	scale.zero()
@@ -624,7 +734,7 @@ def flow_test(machiene, scale, pos, pressure_list, mass_lim=100, delay_t=0, empt
 	
 	n_samples = 30
 	wait_time = n_samples*scale.read_freq
-	mass_threshold = (20+ 0.)/(1000 + 0.)
+	mass_threshold = 20.
 	
 	
 	for pres in pressure_list:
@@ -686,6 +796,8 @@ def lin_reg(x, y, alpha=0.95):
 	
 	b_int = list(t.interval(alpha, n-2, b, s_b))
 	a_int = list(t.interval(alpha, n-2, a, s_a))
+	t_val = t.interval(alpha, n-2, 0, 1)[1]
+	#print('fit param: n=' +str(n) + ', a=' + str(a) + ', s_a=' +str(s_a) + ', b=' + str(b) + ', s_b=' + str(s_b) + 't_val=' + str(t_val))
 	
 	return a, b, a_int, b_int, False
 	

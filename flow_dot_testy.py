@@ -325,16 +325,42 @@ if __name__ == '__main__':
 
 		draw_line(160,98,84,desired_speed*3,desired_press)
 		
+	def dot(x,y,desired_press, time):
+		#gotoxy(x_pos=x,y_pos=y, speed=1000)
+		machiene.gotoxy(position=[x, y],speed=1000)#desired_speed*2)
+		machiene.down(30)
+		[x_stop, y_stop, z_stop] = machiene.probe_z(speed=25,up=0.4,up_rel=True)
+		print (x_stop, y_stop, z_stop)
+		machiene.set_pressure(desired_press)
+		machiene.wait(time)
+		machiene.stop_pressure()
+		#start_pos=[origx, origy,z_start-fly_h]
+		#stop_pos=[origx, origy+dist,z_stop-fly_h]
+		
+		#start_pos_h=[origx, origy,z_start-5]
+		#stop_pos_h=[origx, origy+dist,z_stop-5]
+		
+		machiene.gotoxyz(x_pos=x,y_pos=y,z_pos=28)
+		#machiene.gotoxyz(position=start_pos_h, speed=desired_speed)
+		#machiene.gotoxy(position=[origx, origy+dist*1/3.], speed=desired_speed*2)
+		
 	#drop droplet
+	t=0
+	for x in range(85,285,5):
+		for y in range(150,350,5):
+			
+			dot(x,y,desired_press,t)
+			print(x,y,t)
+			t+=0.01
 	#machiene.gotoxy(x_pos=85,y_pos=105)
 	#[x_stop, y_stop, z_stop] = machiene.probe_z(speed=100)
-	draw_line(85-23,125,84,desired_speed*3,desired_press)
+	#draw_line(85-23,125,84,desired_speed*3,desired_press)
 	#machiene.gotoxy(x_pos=128,y_pos=105)
 	#[x_stop, y_stop, z_stop] = machiene.probe_z(speed=100)
-	draw_line(128-23,125+74,10,desired_speed*3,desired_press)
+	#draw_line(128-23,125+74,10,desired_speed*3,desired_press)
 	#machiene.gotoxy(x_pos=171,y_pos=105)
 	#[x_stop, y_stop, z_stop] = machiene.probe_z(speed=100)
-	draw_line(173-23,125,84,desired_speed*3,desired_press)
+	#draw_line(173-23,125,84,desired_speed*3,desired_press)
 	machiene.gotoxy(x_pos=50,y_pos=50)
 	#[x_stop, y_stop, z_stop] = machiene.probe_z(speed=100)
 	print("done at {1}".format(line,datetime.datetime.now()))

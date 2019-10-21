@@ -89,14 +89,15 @@ if __name__ == '__main__':
 	start_flow = time.time()
 	f_c = False
 	pressure = 0
-	delay = 1
+	start_pressure = 200
+	delay = 0.1
 	answer = raw_input("Do you want to do flow calibration? (y/n) ")
 	if answer == "n": 
 		f_c = False
-		pressure = 4000
+		pressure = start_pressure
 	elif answer == "y": 
 		f_c = True
-		init_pressure = 4000
+		init_pressure = start_pressure
 		scale = scale_handler() 
 		scale.calibrate()
 		scale.zero()
@@ -127,13 +128,13 @@ if __name__ == '__main__':
 	
 	# Prepare drawings
 	total_line_length_mm = 2*90. + 12.
-	total_mass_mg = 120.
+	total_mass_mg = 20.
 	if measured_flow is None: measured_flow = desired_flow
 	speed_mmPmin = total_line_length_mm/((total_mass_mg/measured_flow)/60.)
 	print('Calculated speed was: ' + str(speed_mmPmin) + ' mm/min')
 	start_draw = time.time()
 	ref_point = machiene.tilt_map_og
-	ref_h = ref_point[2] - 5.3 - 0.2 - 0.85 #jig h diff, kapton thickness, actual height above
+	ref_h = ref_point[2] - 5.3 - 0.2 #- 0.85 #jig h diff, kapton thickness, actual height above
 	kap_list = []
 	n_sen = 1
 	dx_sen = 0
@@ -156,9 +157,9 @@ if __name__ == '__main__':
 					
 	
 	# Draw the kaptons
-	machiene.gotoxy(ref_point[0], ref_point[1])
-	machiene.probe_z()
-	time.sleep(1)
+	#machiene.gotoxy(ref_point[0], ref_point[1])
+	#machiene.probe_z()
+	#time.sleep(1)
 	for sen in kap_list:
 		sen.draw(machiene, lines=True, zigzag=False, delay=delay)
 	print("Drawing took " + str(time.time() - start_draw) + "s")

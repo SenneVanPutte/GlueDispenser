@@ -33,7 +33,7 @@ class gcode_handler():
 		self.x=0
 		self.y=0
 		self.z=0
-		self.speed=2000 #mm/min
+		self.speed=4000 #mm/min
 		self.zspeed=500 #mm/min on Z axis
 		self.aspeed=10 #deg/min
 		self.time_movingxy=0
@@ -279,8 +279,16 @@ class gcode_handler():
 					resp_dict = ast.literal_eval(line)
 				except:
 					resp_dict = {}
-				#if "er" in resp_dict: 
-					#print("######--WARNING--######")
+				if "er" in resp_dict:
+					#if "Limit switch hit" in resp_dict["er"]["msg"]:
+					#	print("gcode ERROR: Limit switch hit!!!")
+					if "File not open" in resp_dict["er"]["msg"]:
+						self.log_file.write("File not open\n")
+					else:
+						print("###### GCODE ERROR: " + resp_dict["er"]["msg"] + " ######")
+						self.log_file.write("######--ERROR--######\n")
+						self.log_file.write(line)
+						self.log_file.write("######---------######")
 					#print(l, line)
 				if not line == unicode(""):
 					self.log_file.write("send bloc read: "+ line)
@@ -305,9 +313,10 @@ class gcode_handler():
 		self.z=z
 		self.time_movingz+=(time.time()-t)
 		
-	def up(self):
+	def up(self, speed=None):
 		t=time.time()
-		gcode="G1 Z0 F{}".format(self.zspeed)
+		if speed is None: gcode="G1 Z0 F{}".format(self.zspeed)
+		else: gcode="G1 Z0 F{}".format(speed)
 		t=1
 		
 		self.send_bloc(gcode)
@@ -435,7 +444,7 @@ class gcode_handler():
 		t=time.time()
 		x = x_pos
 		y = y_pos
-		z = z_pos
+		z_temp = z_pos
 		if speed is None:
 			move_speed = self.speed
 		else:
@@ -444,7 +453,7 @@ class gcode_handler():
 			x = position[0]
 			y = position[1]
 			z = position[2]
-		z = max(z, 0)
+		z = max(z_temp, 0)
 		distance=sqrt((self.x-x)**2+(self.y-y)**2)
 		self.write_glue_log("move to: " +str(x)+ ", "+str(y)+", "+str(z)+ "\t speed: "+str(move_speed), time_stamp=True)
 		gcode="G1 X{} Y{} Z{} F{}".format(x,y,z,move_speed)
@@ -724,8 +733,10 @@ class drawing():
 	Drawings stored in dxf files using boarders layer, glue_lines layer, glue_zigzag layer, glue_dots layer and glue_drops layer
 	not all these layers need to be there
 	clean_point = [x, y, z] point to dip off glue drop during gluing
+	offset = [x, y] offset of the drawing with respect to the coordinate function coord_func
+	coord_func function to translate jig coordinates to absolute machiene coordinates
 	"""
-	def __init__(self, dxf_file_name, offset=MIN_OFFSET, hight=BOARDS_CFG['hight_1'], line_speed=None, line_pressure=None, speed_dict=None, pressure_dict=None, coord_func=no_filter, clean_point=None):
+	def __init__(self, dxf_file_name, offset=[0,0], hight=0, line_speed=None, line_pressure=None, speed_dict=None, pressure_dict=None, coord_func=no_filter, clean_point=None):
 		# Loading file
 		if line_speed is None and speed_dict is None: raise ValueError("Translation dict needed for speed line widths")
 		if line_pressure is None and pressure_dict is None: raise ValueError("Translation dict needed for pressure line colors")
@@ -786,7 +797,15 @@ class drawing():
 				self.drawing["glue_drops"].append(e.dxf.center)
 			#print(e.dxftype(), e.dxf.layer)
 			
-	def draw_lines(self, machine, key="boarders", set_pen=False, delay=0.1):
+	def draw_lines(self, machine, key="boarders", set_pen=False, delay=0.1, up_first=True, rel_pos_start=None, rel_pos_end=None):
+		"""
+		Draw line function
+		By default draws loaded lines
+		costum lines can be drawn by setting the rel_pos input variables
+		"""
+		
+		if not rel_pos_start is None:
+			lines=[[rel_pos_start[0], rel_pos_start[1]], [rel_pos_end[0], rel_pos_end[1]]]
 		
 		# Check input config
 		hight = self.hight
@@ -820,8 +839,13 @@ class drawing():
 			startpoint=l[0]
 			endpoint=l[1]
 			if startpoint!=previous_point:
-				machine.stop_pressure()
-				machine.up()
+				
+				if up_first:
+					machine.up(speed=1000)
+					machine.stop_pressure()
+				else:
+					machine.stop_pressure()
+					machine.up()
 				
 				if self.clean_point is not None:
 					#Clear drop
@@ -840,8 +864,13 @@ class drawing():
 			else:
 				machine.gotoxy(position=self.coord_func(x=endpoint[0] + offset[0], y=endpoint[1] + offset[1]), speed=lines_w[i])
 			previous_point=endpoint
-		machine.stop_pressure()
-		machine.up()
+		
+		if up_first:
+			machine.up(speed=1000)
+			machine.stop_pressure()
+		else:
+			machine.stop_pressure()
+			machine.up()
 		
 	def draw_dots(self, machine, set_pen=False):
 		hight = self.hight
@@ -867,10 +896,13 @@ class drawing():
 			machine.glue(1)
 			machine.up()
 	
-	def drop_glue(self, machine, drop_time, pressure, index=0):
-		if "glue_drops" not in self.drawing or len(self.drawing["glue_drops"]) == 0: raise ValueError("Attempted to drop glue, while no drop points found")
-		print("glue_drops", self.drawing["glue_drops"])
-		drop_point = self.drawing["glue_drops"][index]
+	def drop_glue(self, machine, drop_time, pressure, index=0, rel_pos=None):
+		if rel_pos is None:
+			if "glue_drops" not in self.drawing or len(self.drawing["glue_drops"]) == 0: raise ValueError("Attempted to drop glue, while no drop points found")
+			print("glue_drops", self.drawing["glue_drops"])
+			drop_point = self.drawing["glue_drops"][index]
+		else: 
+			drop_point = rel_pos
 		offset = self.offset
 		machine.gotoxy(position=self.coord_func(x=drop_point[0] + offset[0], y=drop_point[1] + offset[1]))
 		#machine.down(proper_hight)
@@ -879,7 +911,7 @@ class drawing():
 		machine.stop_pressure()
 		#machine.up()
 	
-	def draw(self, machine, boarders=False, lines=True, zigzag=True, dots=False, delay=1):
+	def draw(self, machine, boarders=False, lines=True, zigzag=True, dots=False, delay=1, up_first=True):
 
 		# Draw the borders (to be removed)
 		#answer = raw_input("Do you want to draw the borders? (y/n) ")
@@ -893,7 +925,7 @@ class drawing():
 			#answer = raw_input("Do you want to draw glue lines? (y/n) ")
 			if lines:
 				print "-gluing lines"
-				self.draw_lines(machine, key="glue_lines", delay=delay)
+				self.draw_lines(machine, key="glue_lines", delay=delay, up_first=up_first)
 		if not self.drawing["glue_zigzag"] == []:
 			#answer = raw_input("Do you want to draw glue zigzags? (y/n) ")
 			if zigzag:

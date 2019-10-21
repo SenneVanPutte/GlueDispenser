@@ -91,8 +91,8 @@ if __name__ == '__main__':
 	scale_pos = [350, 200]
 	start_flow = time.time()
 	f_c = False
-	pressure = 4000
-	init_pressure=4000
+	pressure = 100 #4000 edit SENNE
+	init_pressure= 100 #4000 edit SENNE
 	desired_flow=5
 	delay = 1	
 	if 0:	

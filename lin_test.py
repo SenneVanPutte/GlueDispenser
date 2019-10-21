@@ -21,8 +21,8 @@ if __name__ == '__main__':
 	#flow_list = flow_test(machiene, scale, [180, 140, 0], pressure_list, duration=5)
 	#machiene.down(8)
 	#flow_list, flow_list_up, flow_list_dn, delay_list = flow_test(machiene, scale, [0, 0, 0], pressure_list, duration=7, empty_check=False)
-	#scale_pos = [0, 0, 0]
-	scale_pos = [350, 200, 0]
+	scale_pos = [0, 0, 0]
+	#scale_pos = [350, 200, 0]
 	flow_list, flow_list_up, flow_list_dn, delay_list = flow_test(machiene, scale, scale_pos, pressure_list, mass_lim=200, empty_check=False)
 	
 	fig, ax = pyplot.subplots() 

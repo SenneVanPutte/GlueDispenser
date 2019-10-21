@@ -277,10 +277,11 @@ class scale_handler():
 				# stop
 				waiting_after = False
 			satisfied = not (waiting_befor or measuring or waiting_after)
+		print '' 
 		print('waiting for join')
 		pressure_thread.join()
 		
-		print '' 
+		
 		self.write_record(data)
 		return data, redo
 	

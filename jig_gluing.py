@@ -10,7 +10,7 @@ from optparse import OptionParser
 usage = 'usage: %prog [options]'
 parser = optparse.OptionParser(usage)
 parser.add_option('-j', '--jig',  dest='jig',  help='Jig that needs to be loaded (for example: kapton_A, kapton_B)', type='string')
-parser.add_option('-d', '--draw', dest='draw', help='Comma seperated of layer in dxf file that needs to be drawn (for example glue_lines or glue_lines,pigtail_bot)', type='string')
+parser.add_option('-d', '--draw', dest='draw', help='Comma seperated of layer in dxf file that needs to be drawn (for example kapton or kapton,pigtail_bot)', type='string')
 (options, args) = parser.parse_args()
 
 jig_key = options.jig

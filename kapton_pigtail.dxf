@@ -91,7 +91,7 @@ STANDARD
   9
 $CLAYER
   8
-pigtail_bot
+kapton
   9
 $CELTYPE
   6
@@ -2349,7 +2349,7 @@ AcDbSymbolTableRecord
 100
 AcDbLayerTableRecord
   2
-glue_lines
+kapton
  70
     0
  62
@@ -11801,7 +11801,7 @@ LINE
 100
 AcDbEntity
   8
-glue_lines
+kapton
   6
 ByLayer
  62
@@ -11873,7 +11873,7 @@ LINE
 100
 AcDbEntity
   8
-glue_lines
+kapton
   6
 ByLayer
  62
@@ -11897,7 +11897,7 @@ LINE
 100
 AcDbEntity
   8
-glue_lines
+kapton
   6
 ByLayer
  62

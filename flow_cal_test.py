@@ -37,7 +37,7 @@ if __name__ == '__main__':
 								pressure, 
 								desired_flow, 
 								precision=1, 
-								mass_limit=200, 
+								mass_limit=150, 
 								threshold=20, 
 								show_data=True
 								)

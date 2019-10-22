@@ -595,7 +595,7 @@ class gcode_handler():
 		self.send_bloc("M30")
 		print("Turn away and count to ten")
 	
-def probe(machiene, start_x, start_y, dir='y+', threshold_h=19, step=1, speed=50, up=15):
+def probe(machiene, start_x, start_y, dir='y+', threshold_h=19, step=1, speed=50, up=15, prb_h=0.75):
 	if step < 0.025:
 		print("finished")
 		return
@@ -614,6 +614,7 @@ def probe(machiene, start_x, start_y, dir='y+', threshold_h=19, step=1, speed=50
 			d_pos = [-step, 0]
 		else: raise ValueError("Unknown probe direction '" + str(dir[1]) + "' should be '+' or '-'" )
 	else: raise ValueError("Unknown probe axis '" + str(dir[0]) + "' should be 'x' or 'y'")
+	#print(d_pos)
 	#machiene.up()
 	machiene.gotoxy(start_x, start_y, speed=speed)
 	machiene.down(up)
@@ -630,21 +631,21 @@ def probe(machiene, start_x, start_y, dir='y+', threshold_h=19, step=1, speed=50
 		final_x = start_x + it*d_pos[0]
 		final_y = start_y + it*d_pos[1]
 		machiene.gotoxy(final_x, final_y, speed=speed)
-		posy = machiene.probe_z(speed=10, up = new_z - 0.75, max_z = threshold_h + 1)
+		posy = machiene.probe_z(speed=10, up = new_z - prb_h, max_z = threshold_h + 1)
 		#print(posy)
 		new_z = posy[2]
 		it += 1
 	if final_x == start_x and final_y == start_y:
 		#print("move back")
 		return probe(machiene, final_x - d_pos[0], final_y - d_pos[1], dir=dir, threshold_h=threshold_h, step=step, speed=speed, up=up)
-	elif step < 0.1:
+	elif step < 0.26:
 		print("edge found at " + str([final_x, final_y]))
 		return [final_x, final_y]
 	else:
 		#print("next")
 		return probe(machiene, final_x - d_pos[0], final_y - d_pos[1], dir=dir, threshold_h=threshold_h, step=(step + 0.0)/4., speed=max((speed + 0.0)/2., 25), up=prev_z - 0.75)
 	
-def make_jig_coord(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1.15, probe_x='x-', probe_y='y+', jig_file="prev_jig_coo.py", load_prev=False):
+def make_jig_coord(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1.15, probe_x='x-', probe_y='y+', prb_h=0.75, jig_file="prev_jig_coo.py", load_prev=False):
 	try:
 		old_f = open(jig_file, "r")
 		try:
@@ -661,17 +662,21 @@ def make_jig_coord(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1.15, 
 		machiene.gotoxy(x_guess, y_guess)
 		machiene.down(up)
 		th_h = machiene.probe_z(speed=25)[2] + dth
-		[x1, y1] = probe(machiene, x_guess, y_guess, dir=probe_y, threshold_h=th_h, up=th_h - 0.5 - dth)
+		[x1, y1] = probe(machiene, x_guess, y_guess, dir=probe_y, threshold_h=th_h, up=th_h - 0.5 - dth, prb_h=prb_h)
 		machiene.up()
 		machiene.gotoxy(x_guess + dx, y_guess)
 		machiene.down(up - 4)
 		th_h = machiene.probe_z(speed=25)[2] + dth
-		[x2, y2] = probe(machiene, x_guess + dx, y_guess, dir=probe_y, threshold_h=th_h, up=th_h - 0.5 - dth, step=4, speed=100)
+		[x2, y2] = probe(machiene, x_guess + dx, y_guess, dir=probe_y, threshold_h=th_h, up=th_h - 0.5 - dth, step=4, speed=100, prb_h=prb_h)
 		machiene.up()
-		machiene.gotoxy(x_guess, y_guess + dy)
+		if probe_x[-1] == '+':
+			dxx = 15
+		else:
+			dxx = 0
+		machiene.gotoxy(x_guess - dxx, y_guess + dy)
 		machiene.down(up - 6)
 		th_h = machiene.probe_z(speed=25)[2] + dth
-		[x3, y3] = probe(machiene, x_guess, y_guess + dy, dir=probe_x, threshold_h=th_h, step=4, speed=100, up=th_h - 0.5 - dth)
+		[x3, y3] = probe(machiene, x_guess - dxx, y_guess + dy, dir=probe_x, threshold_h=th_h, step=4, speed=100, up=th_h - 0.5 - dth, prb_h=prb_h)
 		machiene.up()
 	
 		sin_th = (y2 - y1 + 0.)/(math.sqrt((x2 - x1 + 0.)**2 + (y2 - y1 + 0.)**2))
@@ -936,7 +941,130 @@ class drawing():
 			if dots:
 				print "-gluing dots"
 				self.draw_dots(machine)
+
+
+
+class drawing2():
+	"""
+	Drawings stored in dxf files using boarders layer, glue_lines layer, glue_zigzag layer, glue_dots layer and glue_drops layer
+	not all these layers need to be there
+	clean_point = [x, y, z] point to dip off glue drop during gluing
+	offset = [x, y] offset of the drawing with respect to the coordinate function coord_func
+	coord_func function to translate jig coordinates to absolute machiene coordinates
+	"""
+	def __init__(self, dxf_file_name, offset=[0,0], hight=0, coord_func=no_filter, clean_point=None):
+		
+		self.file_name = dxf_file_name
+		self.hight = hight
+		self.offset = offset
+		self.coord_func = coord_func
+		self.clean_point = clean_point
+		
+		# Loading file
+		print("loading data from " + dxf_file_name)
+		dwg=ezdxf.readfile(dxf_file_name)
+		mod=dwg.modelspace()
+
+		# Declare and fill variables from the file
+		self.drawing = {}
+		for e in mod:
+			layer = e.dxf.layer
+			dxf_type = e.dxftype()
+			if not layer in self.drawing:
+				self.drawing[layer] = {}
+				self.drawing[layer]['lines'] = []
+			if dxf_type == 'LINE': self.drawing[layer]['lines'].append([e.dxf.start, e.dxf.end])
+		#for key in self.drawing:
+		#	print(key)
+		#	print(self.drawing[key])
+			#if e.dxftype() == 'POINT' and e.dxf.layer=="glue_dots":
+			#	if e.dxf.location not in self.drawing["glue_dots"]: self.drawing["glue_dots"].append(e.dxf.location)
 			
+			#if e.dxftype() == 'CIRCLE' and e.dxf.layer=="glue_drops":
+				#print("circle found", e.dxf.keys())
+			#	self.drawing["glue_drops"].append(e.dxf.center)
+			#print(e.dxftype(), e.dxf.layer)
+			
+	def draw_lines(self, machine, pressure, speed, layer=None, set_pen=False, delay=0.1, up_first=True, rel_pos_start=None, rel_pos_end=None):
+		"""
+		Draw line function
+		By default draws loaded lines
+		costum lines can be drawn by setting the rel_pos input variables
+		"""
+		
+		if not rel_pos_start is None:
+			lines=[[rel_pos_start[0], rel_pos_start[1]], [rel_pos_end[0], rel_pos_end[1]]]
+		elif not layer is None:
+			lines = self.drawing[layer]['lines']
+		else: raise ValueError('Lines not set')
+		
+		# Check input config
+		hight = self.hight
+		offset = self.offset
+		#offset_test(offset)
+		if len(lines) == 0: 
+			print("draw_lines: no lines found.")
+			return
+		
+		# Set machine positions
+		init_move=lines[0][0]
+		machine.gotoxy(position=self.coord_func(x=init_move[0] + offset[0], y=init_move[1] + offset[1]))
+		previous_point=lines[0][0]
+		machine.down(hight)
+		if set_pen:
+			raw_input("-set pen")
+
+		# Draw the lines
+		for i,l in enumerate(lines):
+			startpoint=l[0]
+			endpoint=l[1]
+			if startpoint!=previous_point:
+				
+				if up_first:
+					machine.up(speed=1000)
+					machine.stop_pressure()
+				else:
+					machine.stop_pressure()
+					machine.up()
+				
+				if self.clean_point is not None:
+					#Clear drop
+					machine.gotoxy(position=self.clean_point[0:2])
+					machine.down(self.clean_point[2] -2, do_tilt=False)
+					machine.down(self.clean_point[2], do_tilt=False, speed=100)
+					machine.up()
+				
+				#continue drawing
+				machine.gotoxy(position=self.coord_func(x=startpoint[0] + offset[0], y=startpoint[1] + offset[1]))
+				machine.down(hight)
+			#goto end point
+			machine.set_pressure(pressure, glue_delay=delay)
+			machine.gotoxy(position=self.coord_func(x=endpoint[0] + offset[0], y=endpoint[1] + offset[1]), speed=speed)
+			previous_point=endpoint
+		
+		if up_first:
+			machine.up(speed=1000)
+			machine.stop_pressure()
+		else:
+			machine.stop_pressure()
+			machine.up()
+		
+	def drop_glue(self, machine, drop_time, pressure, index=0, rel_pos=None):
+		if rel_pos is None:
+			if "glue_drops" not in self.drawing or len(self.drawing["glue_drops"]) == 0: raise ValueError("Attempted to drop glue, while no drop points found")
+			print("glue_drops", self.drawing["glue_drops"])
+			drop_point = self.drawing["glue_drops"][index]
+		else: 
+			drop_point = rel_pos
+		offset = self.offset
+		machine.gotoxy(position=self.coord_func(x=drop_point[0] + offset[0], y=drop_point[1] + offset[1]))
+		#machine.down(proper_hight)
+		machine.set_pressure(pressure, no_flush=False)
+		time.sleep(drop_time)
+		machine.stop_pressure()
+		#machine.up()
+				
+				
 def offset_test(offset):
 	
 	# Test if offset will not be out of range

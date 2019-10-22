@@ -51,6 +51,74 @@ CALIBRATION_CFG = {
 MIN_OFFSET = [75, 100]
 TABLE_HEIGHT = 35
 
+JIG_CFG = {
+	'kapton_A':{
+		'offsets' : {
+			'table_position' : [80, 110],
+			'coordinate_origin' : [35.25, 11.75],
+		},
+		'probe': {
+			'probe_x':  'x-', 
+			'probe_y':  'y+',
+			'dx':       135, 
+			'dy':       100,  
+			'dth':      1, 
+			'prb_h':    0.75,
+			'jig_file': 'kapton_jig_coo.py'
+		},
+		'tilt': {
+			'p1': [10, -5],
+			'p2': [150, -5],
+			'p3': [10, 120],
+			'max_height': 6,
+		},
+		'flow': {
+			'desired_flow': 10,
+		},
+		'drawing': {
+			'hight': 5.5, # 5.3 + 0.2
+			'file' : 'kapton_pigtail.dxf',
+		},
+	},
+	'kapton_B':{
+		'offsets' : {
+			'table_position' : [100, 115],
+			'coordinate_origin' : [2.25, 3],
+		},
+		'probe': {
+			'probe_x':  'x+', 
+			'probe_y':  'y+',
+			'dx':       98, 
+			'dy':       98,  
+			'dth':      1,  
+			'prb_h':    0.75,
+			'jig_file': 'kapton_B_jig_coo.py'
+		},
+		'tilt': {
+			'p1': [0, -5],
+			'p2': [100, -5],
+			'p3': [-10, 85],
+			'max_height': 6,
+		},
+		'flow': {
+			'desired_flow': 10,
+		},
+		'drawing': {
+			'hight': 0.5, # 5.3 + 0.2
+			'file' : 'kapton_pigtail.dxf',
+		},
+	},
+}
+
+FLOW_CFG = {
+	'water':{
+		'start_pressure': 200,
+	},
+	'glue': {
+		'start_pressure': 4000,
+	},
+}
+
 def sum_offsets(off1, off2):
 	if not isinstance(off1, list) or not isinstance(off2, list): raise ValueError('sum_offsets: offsets must be lists')
 	if len(off1) != len(off2): raise ValueError('sum_offsets: offsets not of equal size')

@@ -78,47 +78,66 @@ class scale_handler():
 		self.serial_p.flush()
 	
 	def zero(self):
-		#time.sleep(2)
-		
-		#self.clear_buffer()
-		#self.write_glue_log("")
-		#self.write_glue_log("zero scale")
 		self.send_command("t t ")
 		self.clear_buffer()
 		time.sleep(0.1)
 		#self.send_command("t")
 		self.clear_buffer()
-		return
+		#return
 		#time.sleep(0.1)
 		start = time.time()
 		#print(self.read_port_h())
 		#mass = self.read_port_h()[1]
-		mass = self.read_mass()
-		print(mass)
-		# while( abs(mass) > 0.01):
-			#print(mass)
-			#mass = self.read_port_h()[1]
-			# mass = self.read_mass()
-			# time.sleep(0.1)
-			# if time.time() - start > 10 +1:
-				# print("Zeroing took longer then relaxation time: " + str(10) + "s +1s")
+		time_out = 10
+		mass = self.read_mass_avg()
+		
+		while( abs(mass) > 0.01):
+			self.send_command("t")
+			time.sleep(0.2)
+			mass = self.read_mass()
+			if time.time() - start > time_out:	
+				print("Zeroing took longer then : " + str(time_out) + "s ")
+				return
+		return
 				# break
 		
 		
 	
 	def calibrate(self, option="g", clear_time=None):
 		'''
-		g = 5.8g
+		g = 1g
 		h = 50g
 		'''
 		mass_str = 'Xg'
-		if option == "g": mass_str = '1 g' 
-		elif option == "h": mass_str = '50 g' 
+		mass_exp = 1
+		if option == "g": 
+			mass_str = '1 g' 
+			mass_exp = 1
+		elif option == "h": 
+			mass_str = '50 g'
+			mass_exp = 50
 		raw_input("Put " + mass_str+ " calibration weight on the scale")
 		self.send_command(option)
 		time.sleep(2)
+		
+		start = time.time()
+		#print(self.read_port_h())
+		#mass = self.read_port_h()[1]
+		time_out = 10
+		mass = self.read_mass_avg()
+		
+		while( abs(mass - mass_exp) > 0.01):
+			self.send_command(option)
+			time.sleep(0.2)
+			mass = self.read_mass()
+			if time.time() - start > time_out:	
+				print("Calibrating took longer then : " + str(time_out) + "s ")
+				return
+		
+		
 		raw_input("Remove calibration weight")
 		self.clear_buffer()
+		return
 			
 	def conf_avg(self, option="d"):
 		'''
@@ -169,6 +188,14 @@ class scale_handler():
 		return temp
 	
 	def read_mass(self):
+		mass = None
+		start_t = time.time()
+		while mass is None and time.time() - start_t < self.time_out:
+			mass = self.read_port_h()[0]
+		if mass is None: raise ValueError('read_mass timed out')
+		return mass
+	
+	def read_mass_avg(self):
 		mass = None
 		start_t = time.time()
 		while mass is None and time.time() - start_t < self.time_out:

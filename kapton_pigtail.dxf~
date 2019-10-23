@@ -11897,6 +11897,78 @@ LINE
 100
 AcDbEntity
   8
+pigtail_top
+  6
+ByLayer
+ 62
+  256
+370
+   -1
+100
+AcDbLine
+ 10
+33.7
+ 20
+90
+ 11
+33.7
+ 21
+82.7
+  0
+LINE
+  5
+1D9
+100
+AcDbEntity
+  8
+pigtail_top
+  6
+ByLayer
+ 62
+  256
+370
+   -1
+100
+AcDbLine
+ 10
+33.7
+ 20
+82.7
+ 11
+38.5
+ 21
+82.7
+  0
+LINE
+  5
+1DA
+100
+AcDbEntity
+  8
+pigtail_top
+  6
+ByLayer
+ 62
+  256
+370
+   -1
+100
+AcDbLine
+ 10
+38.5
+ 20
+82.7
+ 11
+38.5
+ 21
+90
+  0
+LINE
+  5
+1DB
+100
+AcDbEntity
+  8
 border
   6
 ByLayer
@@ -11917,7 +11989,7 @@ AcDbLine
   0
 LINE
   5
-1D9
+1DC
 100
 AcDbEntity
   8
@@ -11941,7 +12013,7 @@ AcDbLine
   0
 LINE
   5
-1DA
+1DD
 100
 AcDbEntity
   8
@@ -11955,83 +12027,11 @@ ByLayer
 100
 AcDbLine
  10
-59
+59.2
  20
 82.7
  11
-59
- 21
-92
-  0
-LINE
-  5
-1DB
-100
-AcDbEntity
-  8
-pigtail_top
-  6
-ByLayer
- 62
-  256
-370
-   -1
-100
-AcDbLine
- 10
-32.7
- 20
-92
- 11
-32.7
- 21
-82.7
-  0
-LINE
-  5
-1DC
-100
-AcDbEntity
-  8
-pigtail_top
-  6
-ByLayer
- 62
-  256
-370
-   -1
-100
-AcDbLine
- 10
-32.7
- 20
-82.7
- 11
-37.5
- 21
-82.7
-  0
-LINE
-  5
-1DD
-100
-AcDbEntity
-  8
-pigtail_top
-  6
-ByLayer
- 62
-  256
-370
-   -1
-100
-AcDbLine
- 10
-37.5
- 20
-82.7
- 11
-37.5
+59.2
  21
 92
   0

@@ -671,12 +671,14 @@ def make_jig_coord(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1.15, 
 		machiene.up()
 		if probe_x[-1] == '+':
 			dxx = 15
+			x_geuss_2 = max(x_guess - dxx, 0)
 		else:
 			dxx = 0
-		machiene.gotoxy(x_guess - dxx, y_guess + dy)
+			x_geuss_2 = max(x_guess - dxx, 0)
+		machiene.gotoxy(x_geuss_2, y_guess + dy)
 		machiene.down(up - 6)
 		th_h = machiene.probe_z(speed=25)[2] + dth
-		[x3, y3] = probe(machiene, x_guess - dxx, y_guess + dy, dir=probe_x, threshold_h=th_h, step=4, speed=100, up=th_h - 0.5 - dth, prb_h=prb_h)
+		[x3, y3] = probe(machiene, x_geuss_2, y_guess + dy, dir=probe_x, threshold_h=th_h, step=4, speed=100, up=th_h - 0.5 - dth, prb_h=prb_h)
 		machiene.up()
 	
 		sin_th = (y2 - y1 + 0.)/(math.sqrt((x2 - x1 + 0.)**2 + (y2 - y1 + 0.)**2))
@@ -915,6 +917,12 @@ class drawing():
 		time.sleep(drop_time)
 		machine.stop_pressure()
 		#machine.up()
+	
+	def clear_droplet(self, machine):
+		machine.gotoxy(position=self.clean_point[0:2])
+		machine.down(self.clean_point[2] -2, do_tilt=False)
+		machine.down(self.clean_point[2], do_tilt=False, speed=100)
+		machine.up()
 	
 	def draw(self, machine, boarders=False, lines=True, zigzag=True, dots=False, delay=1, up_first=True):
 

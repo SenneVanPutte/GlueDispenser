@@ -132,7 +132,7 @@ class scale_handler():
 			mass = self.read_mass()
 			if time.time() - start > time_out:	
 				print("Calibrating took longer then : " + str(time_out) + "s ")
-				return
+				break
 		
 		
 		raw_input("Remove calibration weight")
@@ -466,11 +466,14 @@ def delay_and_flow_regulation(machiene, scale, pos, init_pressure, desired_flow,
 	n_samples = 30
 	relaxation_time = n_samples*scale.read_freq
 	#relaxation_time = scale.read_freq*scale.n_avg
-	time_out = 60.
+	
+	time_out = (mass_limit + 50 + 0.)/((desired_flow + 0.)/2.)
+	print('Time out: ' + str(time_out) + ' s')
+	#time_out = 120.
 	
 	if init: scale.zero()
 	
-	machiene.down(needle_height) 
+	machiene.down(needle_height, do_tilt=False) 
 	
 	# TODO: Start scale for duration store in data
 	pressure = init_pressure

@@ -28,10 +28,10 @@ if __name__ == '__main__':
 	#kapton_og = [103, 92]
 	kapton_og = JIG_CFG[jig_key]['offsets']['table_position']
 	machiene.gotoxy(kapton_og[0], kapton_og[1])
-	machiene.down(15)
+	machiene.down(z_s - JIG_CFG[jig_key]['offsets']['jig_hight'] -2)
 	[x_t, y_t, z_t] = machiene.probe_z(speed=25)
 	print([x_t, y_t, z_t])
-	if z_s - z_t < 13:
+	if z_s - z_t < JIG_CFG[jig_key]['offsets']['jig_hight']:
 		answer = raw_input("Difference was " + str(z_s - z_t) + " missed board? (y/n) ")
 		if answer == "y":
 			exit()
@@ -102,7 +102,7 @@ if __name__ == '__main__':
 	start_flow = time.time()
 	f_c = False
 	pressure = 0
-	start_pressure = 200
+	start_pressure = 4000
 	delay = 0.1
 	answer = raw_input("Do you want to do flow calibration? (y/n) ")
 	if answer == "n": 
@@ -128,7 +128,7 @@ if __name__ == '__main__':
 												scale_pos,  
 												init_pressure, 
 												desired_flow, 
-												precision=5, 
+												precision=4, 
 												mass_limit=150, 
 												threshold=20, 
 												show_data=True, 
@@ -139,9 +139,16 @@ if __name__ == '__main__':
 	print('Drawing with delay of ' + str(delay) + ' s, and pressure of ' + str(pressure) + ' mbar')
 	print("Finding flow took " + str(time.time() - start_flow) + "s")
 	
+	
+	machiene.gotoxy(0, 0)
+	machiene.down(28, do_tilt=False)
+	machiene.down(z_s-1, speed=100, do_tilt=False)
+	machiene.up()
+	#machiene.probe_z(speed=50)
+	
 	# Prepare drawings
 	total_line_length_mm = 2*90. + 12.
-	total_mass_mg = 20.
+	total_mass_mg = 12.
 	if measured_flow is None: measured_flow = desired_flow
 	speed_mmPmin = total_line_length_mm/((total_mass_mg/measured_flow)/60.)
 	#speed_mmPmin = 100
@@ -197,7 +204,7 @@ if __name__ == '__main__':
 				pressure, 
 				speed_mmPmin, 
 				layer=layer, 
-				delay=delay, 
+				delay=0.2, 
 				up_first=True, 
 				)
 	print("Drawing took " + str(time.time() - start_draw) + "s")

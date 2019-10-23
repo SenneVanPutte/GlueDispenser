@@ -82,7 +82,7 @@ JIG_CFG = {
 	},
 	'kapton_B':{
 		'offsets' : {
-			'table_position' : [100, 115],
+			'table_position' : [100, 110],
 			'coordinate_origin' : [2.25, 3],
 		},
 		'probe': {
@@ -101,10 +101,39 @@ JIG_CFG = {
 			'max_height': 6,
 		},
 		'flow': {
-			'desired_flow': 10,
+			'desired_flow': 2.2,
 		},
 		'drawing': {
-			'hight': 0.5, # 5.3 + 0.2
+			'hight': 1.012, # 0.712 + 0.3
+			'file' : 'kapton_pigtail.dxf',
+		},
+	},
+	'table':{
+		'offsets' : {
+			'table_position' : [10, 90],
+			'coordinate_origin' : [0, 0],
+			'jig_hight': 3,
+		},
+		'probe': {
+			'probe_x':  'x+', 
+			'probe_y':  'y+',
+			'dx':       98, 
+			'dy':       98,  
+			'dth':      1,  
+			'prb_h':    0.75,
+			'jig_file': 'table_jig_coo.py'
+		},
+		'tilt': {
+			'p1': [5, 5],
+			'p2': [100, 5],
+			'p3': [5, 85],
+			'max_height': 6,
+		},
+		'flow': {
+			'desired_flow': 0.7,
+		},
+		'drawing': {
+			'hight': 0.3, # 0.712 + 0.3
 			'file' : 'kapton_pigtail.dxf',
 		},
 	},

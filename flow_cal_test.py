@@ -17,8 +17,8 @@ if __name__ == '__main__':
 	# desired_flow = 10
 	
 	# Water
-	pressure = 100
-	desired_flow = 5
+	pressure = 5600
+	desired_flow = 1
 	#scale_pos = [0, 0, 0]
 	scale_pos = [350, 200, 0]
 	
@@ -36,7 +36,7 @@ if __name__ == '__main__':
 								scale_pos, 
 								pressure, 
 								desired_flow, 
-								precision=1, 
+								precision=0.5, 
 								mass_limit=150, 
 								threshold=20, 
 								show_data=True

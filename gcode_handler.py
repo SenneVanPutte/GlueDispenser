@@ -1001,7 +1001,7 @@ class drawing2():
 		"""
 		
 		if not rel_pos_start is None:
-			lines=[[rel_pos_start[0], rel_pos_start[1]], [rel_pos_end[0], rel_pos_end[1]]]
+			lines=[[[rel_pos_start[0], rel_pos_start[1]], [rel_pos_end[0], rel_pos_end[1]]]]
 		elif not layer is None:
 			lines = self.drawing[layer]['lines']
 		else: raise ValueError('Lines not set')
@@ -1037,10 +1037,11 @@ class drawing2():
 				
 				if self.clean_point is not None:
 					#Clear drop
-					machine.gotoxy(position=self.clean_point[0:2])
-					machine.down(self.clean_point[2] -2, do_tilt=False)
-					machine.down(self.clean_point[2], do_tilt=False, speed=100)
-					machine.up()
+					self.clear_droplet(machine)
+					# machine.gotoxy(position=self.clean_point[0:2])
+					# machine.down(self.clean_point[2] -2, do_tilt=False)
+					# machine.down(self.clean_point[2], do_tilt=False, speed=100)
+					# machine.up()
 				
 				#continue drawing
 				machine.gotoxy(position=self.coord_func(x=startpoint[0] + offset[0], y=startpoint[1] + offset[1]))
@@ -1056,7 +1057,25 @@ class drawing2():
 		else:
 			machine.stop_pressure()
 			machine.up()
+
+	def clear_droplet(self, machine):
+		machine.gotoxy(position=self.clean_point[0:2])
+		machine.down(self.clean_point[2] -2, do_tilt=False)
+		machine.down(self.clean_point[2], do_tilt=False, speed=100)
+		machine.up()
 		
+	def layer_line_length(self, layer):
+		lines = self.drawing[layer]['lines']
+		distance = 0
+		for line in lines:
+			dx = line[1][0] - line[0][0]
+			dy = line[1][1] - line[0][1]
+			distance += math.sqrt(dx*dx + dy*dy)
+		return distance
+			
+			
+	
+	
 	def drop_glue(self, machine, drop_time, pressure, index=0, rel_pos=None):
 		if rel_pos is None:
 			if "glue_drops" not in self.drawing or len(self.drawing["glue_drops"]) == 0: raise ValueError("Attempted to drop glue, while no drop points found")

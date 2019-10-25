@@ -7,13 +7,13 @@ if __name__ == '__main__':
 	machiene = gcode_handler()
 	machiene.init_code()
 	
-	machiene.gotoxy(100, 110)
+	machiene.gotoxy(36, 110)
 	machiene.down(15)
 	[x_s, y_s, z_s] = machiene.probe_z(speed=25)
 	print(z_s)
 	
 	machiene.up()
-	machiene.gotoxy(120, 130)
+	machiene.gotoxy(56, 130)
 	machiene.down(15)
 	[x_t, y_t, z_t] = machiene.probe_z(speed=25)
 	print(z_t)

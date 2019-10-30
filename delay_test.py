@@ -102,7 +102,7 @@ if __name__ == '__main__':
 	start_flow = time.time()
 	f_c = False
 	pressure = 0
-	start_pressure = 5000
+	start_pressure = 1000
 	delay = 0.1
 	answer = raw_input("Do you want to do flow calibration? (y/n) ")
 	if answer == "n": 
@@ -119,7 +119,8 @@ if __name__ == '__main__':
 		print("Proceeding with assumed answer 'n'")
 		f_c = False
 	
-	desired_flow = JIG_CFG[jig_key]['flow']['desired_flow']
+	#desired_flow = JIG_CFG[jig_key]['flow']['desired_flow']
+	desired_flow = 3
 	measured_flow = None
 	if f_c: 
 		pressure, delay, measured_flow = delay_and_flow_regulation(

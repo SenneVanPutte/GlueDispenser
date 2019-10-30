@@ -55,17 +55,26 @@ DRAWING_CFG = {
 	'kapton' : {
 		'file' : 'kapton_pigtail.dxf',
 		'layer': 'kapton',
-		'mass' : 18.,
+		'mass' : 12.,
+		'desired_flow': 1.,
+		'flow_precision': 0.5,
+		'init_pressure': 4000,
 	},
 	'pigtail_top' : {
 		'file' : 'kapton_pigtail.dxf',
 		'layer': 'pigtail_top',
-		'mass' : 0.01,
+		'mass' : 0.05,
+		'desired_flow': 0.2,
+		'flow_precision': 0.2,
+		'init_pressure': 650,
 	},
 	'pigtail_bot' : {
 		'file' : 'kapton_pigtail.dxf',
 		'layer': 'pigtail_bot',
-		'mass' : 0.01,
+		'mass' : 0.05,
+		'desired_flow': 0.2,
+		'flow_precision': 0.2,
+		'init_pressure': 650,
 	},
 }
 
@@ -116,7 +125,7 @@ JIG_CFG = {
 		},
 		'tilt': {
 			'p1': [0, -5],
-			'p2': [100, -5],
+			'p2': [100, -10],
 			'p3': [-10, 85],
 			'max_height': 6,
 		},
@@ -124,7 +133,7 @@ JIG_CFG = {
 			'desired_flow': 1,
 		},
 		'drawing': {
-			'hight': 1.19,#0.912,#1.012, # 0.712 + 0.3
+			'hight': 1.,#0.912,#1.012, # 0.712 + 0.3
 			'file' : 'kapton_pigtail.dxf',
 		},
 	},
@@ -153,7 +162,7 @@ JIG_CFG = {
 			'desired_flow': 0.5,
 		},
 		'drawing': {
-			'hight': 0.3, # 0.712 + 0.3
+			'hight': 0.4, # 0.712 + 0.3
 			'file' : 'kapton_pigtail.dxf',
 		},
 	},

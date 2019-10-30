@@ -480,6 +480,7 @@ def delay_and_flow_regulation(machiene, scale, pos, init_pressure, desired_flow,
 	th = threshold 
 	
 	def meas_f(machiene, scale, pressure, relaxation_time, mass_limit, th, show_data=show_data, time_out=time_out):
+		print('Using pressure: ' + str(pressure))
 		redo = True
 		attempt = 0
 		max_attempts = 2
@@ -489,7 +490,7 @@ def delay_and_flow_regulation(machiene, scale, pos, init_pressure, desired_flow,
 			data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn, redo = measure_flow(machiene, scale, pressure, relaxation_time, mass_limit, th, show_data=show_data, time_out=time_out)
 			if redo:
 				print('Flow measurement failed.')
-				if pressure < 50:
+				if pressure < 65:
 					raise ValueError('Pressure to low. Smaller needle?')
 				elif (desired_flow + 0.)*time_out < mass_limit:
 					time_out = (mass_limit + 0.)/(desired_flow + 0.) + 5.
@@ -498,14 +499,17 @@ def delay_and_flow_regulation(machiene, scale, pos, init_pressure, desired_flow,
 		return data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn
 		
 	data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn = meas_f(machiene, scale, pressure, relaxation_time, mass_limit, th, show_data=show_data)
-	
+	prev_press = pressure
 	while abs(flow - desired_flow) > precision:
 		scale.zero()
 		print('Previous pressure: ' + str(pressure) + ' Previous flow: ' + str(flow) )
-		factor = desired_flow/flow
-		factor = min(max(factor, 0.1),10)
-		pressure = factor*pressure
+		factor_tmp = desired_flow/flow
+		factor = min(max(factor_tmp, 0.1),10)
+		pressure_tmp = factor*pressure
+		pressure = max(min(5600, pressure_tmp), 65)
+		if pressure == prev_press: print('limit reached?')
 		
+		prev_press = pressure
 		data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn = meas_f(machiene, scale, pressure, relaxation_time, mass_limit, th, show_data=show_data)
 	
 	return pressure, delay, flow

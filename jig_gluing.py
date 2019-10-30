@@ -101,16 +101,16 @@ if __name__ == '__main__':
 	scale_pos = [350, 200]
 	start_flow = time.time()
 	f_c = False
-	pressure = 0
-	start_pressure = 1300
-	delay = 0.1
+	# pressure = 0
+	# start_pressure = 1500
+	# delay = 0.2
 	answer = raw_input("Do you want to do flow calibration? (y/n) ")
 	if answer == "n": 
 		f_c = False
-		pressure = start_pressure
+		#pressure = start_pressure
 	elif answer == "y": 
 		f_c = True
-		init_pressure = start_pressure
+		#init_pressure = start_pressure
 		scale = scale_handler() 
 		scale.calibrate()
 		scale.zero()
@@ -119,24 +119,57 @@ if __name__ == '__main__':
 		print("Proceeding with assumed answer 'n'")
 		f_c = False
 	
-	desired_flow = JIG_CFG[jig_key]['flow']['desired_flow']
-	measured_flow = None
-	if f_c: 
-		pressure, delay, measured_flow = delay_and_flow_regulation(
+	#desired_flow = JIG_CFG[jig_key]['flow']['desired_flow']
+	prev_desired_flow ={}
+	pressure_dict = {}
+	flow_dict = {}
+	init_pressure = None
+	for layer in draw_layer:
+		
+		# Check if desired flow was already measured
+		do_layer = True
+		for prev_layer in prev_desired_flow:
+			if prev_desired_flow[prev_layer] == DRAWING_CFG[layer]['desired_flow']:
+				flow_dict[layer] = flow_dict[prev_layer]
+				pressure_dict[layer] = pressure_dict[prev_layer]
+				do_layer = False
+		if not do_layer: continue
+			
+		# Set initial pressure
+		if init_pressure is None:
+			init_pressure = DRAWING_CFG[layer]['init_pressure']
+		else:
+			factor_tmp = (DRAWING_CFG[layer]['desired_flow']+0.)/(measured_flow + 0.)
+			factor = min(max(factor_tmp, 0.2),5)
+			init_pressure = factor*DRAWING_CFG[layer]['init_pressure']
+		
+		# Do measurement
+		if f_c: 
+			pressure, delay, measured_flow = delay_and_flow_regulation(
 												machiene, 
 												scale, 
 												scale_pos,  
 												init_pressure, 
-												desired_flow, 
-												precision=0.5, 
+												DRAWING_CFG[layer]['desired_flow'], 
+												precision=DRAWING_CFG[layer]['flow_precision'], 
 												mass_limit=150, 
 												threshold=20, 
 												show_data=True, 
 												init=True
 												)
-		machiene.up()
+		else:
+			#init_pressure = None
+			pressure = DRAWING_CFG[layer]['init_pressure']
+			measured_flow = DRAWING_CFG[layer]['desired_flow']
+			
+		# Set pressure and flow
+		flow_dict[layer] = measured_flow
+		pressure_dict[layer] = pressure
+		prev_desired_flow[layer] = DRAWING_CFG[layer]['desired_flow']
+			
+	machiene.up()
 	
-	print('Drawing with delay of ' + str(delay) + ' s, and pressure of ' + str(pressure) + ' mbar')
+	#print('Drawing with delay of ' + str(delay) + ' s, and pressure of ' + str(pressure) + ' mbar')
 	print("Finding flow took " + str(time.time() - start_flow) + "s")
 	
 	
@@ -200,14 +233,15 @@ if __name__ == '__main__':
 			print('length ' + str(total_line_length_mm))
 			total_mass_mg = DRAWING_CFG[layer]['mass']#1.25#18. #12.
 			print('mass ' + str(total_mass_mg))
-			if measured_flow is None: measured_flow = 0.55 #desired_flow
-			speed_mmPmin = total_line_length_mm/((total_mass_mg/measured_flow)/60.)
+			#if measured_flow is None: measured_flow = 0.83 #desired_flow
+			speed_mmPmin = total_line_length_mm/((total_mass_mg/flow_dict[layer])/60.)
 			#speed_mmPmin = 100
 			print('Calculated speed was: ' + str(speed_mmPmin) + ' mm/min')
 			sen.clear_droplet(machiene)
+			print('Drawing '+layer+' with: '+ str(pressure_dict[layer])+ ' mbar, ' + str(flow_dict[layer])+ ' mg/s, ' + str(speed_mmPmin)+' mm/min')
 			sen.draw_lines(
-				machiene, 
-				pressure, 
+				machiene,
+				pressure_dict[layer],
 				speed_mmPmin, 
 				layer=layer, 
 				delay=0.2, 

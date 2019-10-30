@@ -13,7 +13,22 @@ if __name__ == '__main__':
 	print(z_s)
 	
 	machiene.up()
-	machiene.gotoxy(56, 130)
+	machiene.gotoxy(46, 130)
 	machiene.down(15)
 	[x_t, y_t, z_t] = machiene.probe_z(speed=25)
 	print(z_t)
+	print('Difference: ' + str(z_s - z_t))
+	
+	machiene.up()
+	machiene.gotoxy(116, 130)
+	machiene.down(15)
+	[x_t, y_t, z_t] = machiene.probe_z(speed=25)
+	print(z_t)
+	print('Difference: ' + str(z_s - z_t))
+	
+	machiene.up()
+	machiene.gotoxy(46, 200)
+	machiene.down(15)
+	[x_t, y_t, z_t] = machiene.probe_z(speed=25)
+	print(z_t)
+	print('Difference: ' + str(z_s - z_t))

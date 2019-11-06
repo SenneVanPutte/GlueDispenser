@@ -17,8 +17,8 @@ if __name__ == '__main__':
 	# desired_flow = 10
 	
 	# Water
-	pressure = 5600
-	desired_flow = 1
+	pressure = 3000
+	desired_flow = 0.1
 	#scale_pos = [0, 0, 0]
 	scale_pos = [350, 200, 0]
 	
@@ -36,10 +36,11 @@ if __name__ == '__main__':
 								scale_pos, 
 								pressure, 
 								desired_flow, 
-								precision=0.5, 
+								precision=0.1, 
 								mass_limit=150, 
 								threshold=20, 
-								show_data=True
+								show_data=True,
+								low_flow=True
 								)
 								
 	print('Desired pressure is '+str(desired_press) + ' mbar, delay is ' + str(delay_t) + ' s' )

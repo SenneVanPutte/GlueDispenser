@@ -279,7 +279,107 @@ class scale_handler():
 				if time.time() - start_b > plot_th and display:
 					if value[3]: bool_str = "pressure is  ON"
 					else: bool_str = "pressure is OFF"
-					print '{:6.4} {:6.4} {:6.4} in {:5.3}s {}\r'.format(value[0], value[1], value[2], time.time() - start_b, bool_str),
+					
+					if waiting_befor:
+						progress = 0.
+						eta = time_out
+					elif not waiting_befor and measuring:
+						sigma = value[2]
+						mean = value[1] - avg_mass + 0.
+						progress = (mean + 2.*sigma)/(th_mass + 0.)
+						eta = min((time.time() - start_b - time_ba)*(1./progress -1.), time_out)
+					else:
+						progress = 1.
+						eta = 0.
+					
+					prc_str = '[' + '='*int(40*progress) + ' '*(40 - int(40*progress)) +']'
+					progress_str = '{} [{:6.4} %]'.format(prc_str, progress*100)
+					print '{} {:6.4} {:6.4} {:6.4} in {:6.4}s ETA {:6.4}s {}\r'.format(progress_str, value[0]*1000, value[1]*1000, value[2]*1000, time.time() - start_b, eta, bool_str),
+					plot_th += dt_print
+				
+				data.append((time.time(), value))
+			if waiting_befor and time.time() - start_b > time_ba:
+				# Go from waiting to measuring
+				avg_mass = (sum(mass_b) + 0.)/(len(mass_b) + 0.)
+				#print(avg_mass)
+				start_m = time.time()
+				waiting_befor = False
+				pressure_thread.start()
+			if not waiting_befor and measuring:
+				# Go from measuring to waiting after
+				if mass - avg_mass > th_mass: 
+					start_a = time.time()
+					measuring = False
+					cmd_queue.put('kill_pressure')
+				elif time.time() - start_m > time_out:
+					cmd_queue.put('kill_pressure')
+					print('read_out_flow: timed out, mass limit of '+str(mass_lim)+'mg was not met')
+					redo = True
+					break
+			if not measuring and waiting_after and time.time() - start_a > time_ba + 3:
+				# stop
+				waiting_after = False
+			satisfied = not (waiting_befor or measuring or waiting_after)
+		print '' 
+		print('waiting for join')
+		pressure_thread.join()
+		
+		
+		self.write_record(data)
+		return data, redo
+		
+	def read_out_flow2(self, machiene, pressure, time_ba, mass_lim, n_data=2000, display=True, dt_print=0.5, time_out=30):
+		"""
+		Read scale till 'mass_limit' in mg is accumulated on scale.
+		machiene = gcode_handler object
+		pressure = pressure for machiene in mbar
+		time_ba  = wait time before and after in s 
+		"""
+		cmd_queue = Queue.Queue()
+		pressure_thread = Thread(target=self.set_pressure, args=(machiene, pressure, cmd_queue))
+		pressure_thread.setDaemon(True)
+		
+		th_mass = mass_lim/1000.
+		data = []
+		redo = False
+		plot_th = 0
+		
+		waiting_befor = True
+		waiting_after = True
+		measuring = True
+		satisfied = False
+		start_b = time.time()
+		start_m = None
+		start_a = None
+		avg_mass = 0.
+		mass_b = []
+		mass = 0.
+		aq_data = 0
+		while not satisfied:
+			value = self.read_port_h()
+			
+			if value[0] is not None:
+				mass = value[0]
+				if not waiting_befor and measuring and value[3]: aq_data += 1
+				if waiting_befor: mass_b.append(mass)
+				if time.time() - start_b > plot_th and display:
+					if value[3]: bool_str = "pressure is  ON"
+					else: bool_str = "pressure is OFF"
+					
+					if measuring and not value[3]:
+						progress = 0.
+						eta = time_out + 0.
+					elif not waiting_befor and measuring and value[3]:
+						progress = (aq_data + 0.)/(n_data + 0.)
+						eta = min((time.time() - start_b - time_ba)*(1./progress -1.), time_out)
+					else:
+						progress = 1.
+						eta = 0.
+					
+					prc_str = '[' + '='*int(40*progress) + ' '*(40 - int(40*progress)) +']'
+					progress_str = '{} [{:6.4} %]'.format(prc_str, progress*100)
+					#print '{} {:6.4} {:6.4} {:6.4} in: {:6.4}s ETA: {:6.4}s {}\r'.format(progress_str, value[0]*1000, value[1]*1000, value[2]*1000, time.time() - start_b, eta, bool_str),
+					print '{} glue used: {:6.4} mg, in: {:6.4}s, ETA: {:6.4}s, {}\r'.format(progress_str, (value[1] - avg_mass)*1000, time.time() - start_b, eta, bool_str),
 					plot_th += dt_print
 				
 				data.append((time.time(), value))
@@ -291,7 +391,7 @@ class scale_handler():
 				pressure_thread.start()
 			if not waiting_befor and measuring:
 				# Go from measuring to waiting after
-				if mass - avg_mass > th_mass: 
+				if mass - avg_mass > th_mass or aq_data > n_data: 
 					start_a = time.time()
 					measuring = False
 					cmd_queue.put('kill_pressure')
@@ -390,7 +490,7 @@ def record_pressure(machiene, scale, pressure, duration, wait_time):
 	measure_thread.join()
 	return data
 	
-def measure_flow(machiene, scale, pressure, wait_time, mass_lim, mass_threshold, show_data=True, time_out=30):
+def measure_flow(machiene, scale, pressure, wait_time, mass_lim, mass_threshold, show_data=True, time_out=30, low_flow=False):
 
 	mass_th = mass_threshold/1000.
 
@@ -407,9 +507,10 @@ def measure_flow(machiene, scale, pressure, wait_time, mass_lim, mass_threshold,
 	
 	while redo and attempt < max_retry:
 		attempt += 1
-		data, redo = scale.read_out_flow(machiene, pressure, wait_time, mass_lim, display=True, dt_print=0.5, time_out=time_out)
+		if low_flow: data, redo = scale.read_out_flow2(machiene, pressure, wait_time, mass_lim, display=True, dt_print=0.5, time_out=time_out)
+		else: data, redo = scale.read_out_flow(machiene, pressure, wait_time, mass_lim, display=True, dt_print=0.5, time_out=time_out)
 		if not redo:
-			ret_dict = calc_delay_and_flow(data, mass_th, scale, wait_time)
+			ret_dict = calc_delay_and_flow(data, mass_th, scale, wait_time, low_flow)
 			delay = ret_dict['delay']
 			flow = ret_dict['flow']
 			flow_int = ret_dict['flow_int']
@@ -450,7 +551,7 @@ def measure_flow(machiene, scale, pressure, wait_time, mass_lim, mass_threshold,
 	if redo and attempt >= max_retry: print('measure_flow failed after ' + str(max_retry)+ ' attempts wit pressure ' + str(pressure) + 'mbar, mass threshold ' + str(mass_threshold) + 'g and time out ' + str(time_out)+'s')
 	return data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn, redo
 
-def delay_and_flow_regulation(machiene, scale, pos, init_pressure, desired_flow, precision=1, mass_limit=200, threshold=20, show_data=True, init=True):
+def delay_and_flow_regulation(machiene, scale, pos, init_pressure, desired_flow, precision=1, mass_limit=200, threshold=20, show_data=True, init=True, low_flow=True):
 	'''
 	pos in [x, y, z]
 	pressure in mbar
@@ -487,7 +588,7 @@ def delay_and_flow_regulation(machiene, scale, pos, init_pressure, desired_flow,
 		while redo:
 			attempt +=1
 			if attempt > max_attempts: raise ValueError('Flow measurement failed after ' + str(max_attempts) + ' attempts' )
-			data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn, redo = measure_flow(machiene, scale, pressure, relaxation_time, mass_limit, th, show_data=show_data, time_out=time_out)
+			data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn, redo = measure_flow(machiene, scale, pressure, relaxation_time, mass_limit, th, show_data=show_data, time_out=time_out, low_flow=low_flow)
 			if redo:
 				print('Flow measurement failed.')
 				if pressure < 65:
@@ -495,7 +596,10 @@ def delay_and_flow_regulation(machiene, scale, pos, init_pressure, desired_flow,
 				elif (desired_flow + 0.)*time_out < mass_limit:
 					time_out = (mass_limit + 0.)/(desired_flow + 0.) + 5.
 					print('time out time adjusted: '+str(time_out) + 's')
-				else: raise ValueError('Flow measurement failed for unknown reason')
+				else: 
+					print('Assuming pressure to low adding 500 mbar')
+					meas_f(machiene, scale, pressure + 500, relaxation_time, mass_limit, th, show_data=show_data, time_out=time_out)
+				#else: raise ValueError('Flow measurement failed for unknown reason')
 		return data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn
 		
 	data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn = meas_f(machiene, scale, pressure, relaxation_time, mass_limit, th, show_data=show_data)
@@ -503,8 +607,8 @@ def delay_and_flow_regulation(machiene, scale, pos, init_pressure, desired_flow,
 	while abs(flow - desired_flow) > precision:
 		scale.zero()
 		print('Previous pressure: ' + str(pressure) + ' Previous flow: ' + str(flow) )
-		factor_tmp = desired_flow/flow
-		factor = min(max(factor_tmp, 0.1),10)
+		factor_tmp = desired_flow/max(flow, 0.01)
+		factor = min(max(factor_tmp, 0.2),5)
 		pressure_tmp = factor*pressure
 		pressure = max(min(5600, pressure_tmp), 65)
 		if pressure == prev_press: print('limit reached?')
@@ -514,7 +618,7 @@ def delay_and_flow_regulation(machiene, scale, pos, init_pressure, desired_flow,
 	
 	return pressure, delay, flow
  
-def calc_delay_and_flow(data, th, scale, relax_time):
+def calc_delay_and_flow(data, th, scale, relax_time, low_flow):
 	t_pres_on = None
 	t_pres_of = None
 	start_t = data[0][0]
@@ -595,6 +699,9 @@ def calc_delay_and_flow(data, th, scale, relax_time):
 		if cur_mass < b_mass + th and cur_time < tw_start: tw_start = cur_time
 	
 	if not t_pres_of is None: tw_end = t_pres_of
+	if low_flow and not t_pres_on is None:
+		tw_start = t_pres_on + 10.
+		tw_end = t_pres_of
 	if tw_start > tw_end: 
 		scale.plot_data(data)
 		#raise ValueError('Time window messed up')
@@ -604,6 +711,7 @@ def calc_delay_and_flow(data, th, scale, relax_time):
 	
 	tw_mass = []
 	tw_time = []
+	
 	for entry in data:
 		if entry[0] > tw_start  and entry[0] < tw_end:
 			tw_mass.append(entry[1][0])
@@ -620,6 +728,7 @@ def calc_delay_and_flow(data, th, scale, relax_time):
 	#print(a_tmp, b_tmp, a_int, b_int)
 	
 	extra_time = (th+0.)/(b_tmp + 0.)
+	if low_flow and not t_pres_on is None: extra_time = 0.
 	#print('Extra time: '+ str(extra_time) )
 	tw_mass_l = []
 	tw_time_l = []

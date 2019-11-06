@@ -354,7 +354,7 @@ class gcode_handler():
 		self.tilt_map_og[1] = start_y
 		self.tilt_map_og[2] = start_z
 		
-	def measure_tilt_3p(self, point1, point2, point3, max_height=0):
+	def measure_tilt_3p(self, point1, point2, point3, max_height=0, probe_speed=6):
 		#point1 is taken as the origin 
 		if point1 == point2 or point1 == point3 or point2 == point3: raise ValueError("measure_tilt_3p requires 3 different points")
 		delta_x2 = point2[0] - point1[0]
@@ -375,14 +375,17 @@ class gcode_handler():
 		self.set_tilt()
 		self.gotoxy(position=point1)
 		self.down(max_height)
-		p_1 = self.probe_z(speed=25)
+		self.probe_z(speed=50, up_rel=1)
+		p_1 = self.probe_z(speed=probe_speed)
 		self.gotoxy(position=point2)
 		self.down(max_height)
-		p_2 = self.probe_z(speed=25)
+		self.probe_z(speed=50, up_rel=1)
+		p_2 = self.probe_z(speed=probe_speed)
 		self.gotoxy(position=point1)
 		self.gotoxy(position=point3)
 		self.down(max_height)
-		p_3 = self.probe_z(speed=25)
+		self.probe_z(speed=50, up_rel=1)
+		p_3 = self.probe_z(speed=probe_speed)
 		
 		z_1 = p_1[2]
 		z_2 = p_2[2]

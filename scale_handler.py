@@ -17,7 +17,7 @@ class scale_handler():
 	connection to the calibration scale
 	"""
 	def __init__(self):
-		ser = serial.Serial(r"COM4", baudrate=1000000, xonxoff=False, timeout=0)
+		ser = serial.Serial(r"COM4", baudrate=1000000, xonxoff=False, timeout=0, ask_glue_prod=False)
 		self.clear_time = 0.3
 		# Sample rate in sec
 		#self.read_freq = 0.125
@@ -34,10 +34,24 @@ class scale_handler():
 		
 		self.conf_avg()
 		self.record_file="scale_"+day_str+".log"
-		if not os.path.isfile(self.record_file): record_file = open(self.record_file, 'w')
+		if not os.path.isfile(self.record_file): 
+			record_file = open(self.record_file, 'w')
+			ask_glue_prod = True
 		else: record_file = open(self.record_file, 'a')
+		
 		record_file.write("#\t ____START_SCALE_SESSION____\n")
 		record_file.write("#\t TIME: " + datetime.datetime.now().strftime("%H:%M:%S") + "\n")
+		if ask_glue_prod: 
+			make_time = raw_input('Enter glue production time (hh:mm): ')
+			make_time_splt = make_time.split(':')
+			now = datetime.datetime.now()
+			year = now.year
+			month = now.month
+			day = now.day
+			hour = int(make_time_splt[0])
+			min = int(make_time_splt[1])
+			ts = time.mktime(datetime.datetime(year, month, day, hour, min).timetuple())
+			record_file.write("#\t GLUE TS: " + str(ts) + "\n")
 		record_file.close()
 		
 		self.flow_log="flow_"+day_str+".log"

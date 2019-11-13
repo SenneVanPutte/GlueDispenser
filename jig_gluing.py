@@ -11,6 +11,7 @@ usage = 'usage: %prog [options]'
 parser = optparse.OptionParser(usage)
 parser.add_option('-j', '--jig',  dest='jig',  help='Jig that needs to be loaded (for example: kapton_A, kapton_B)', type='string')
 parser.add_option('-d', '--draw', dest='draw', help='Comma seperated of layer in dxf file that needs to be drawn (for example kapton or kapton,pigtail_bot)', type='string')
+parser.add_option('-g', '--glue', dest='glue', help='To give in new glue mix time', action='store_true', default=False)
 (options, args) = parser.parse_args()
 
 jig_key = options.jig
@@ -111,9 +112,10 @@ if __name__ == '__main__':
 	elif answer == "y": 
 		f_c = True
 		#init_pressure = start_pressure
-		scale = scale_handler() 
-		scale.calibrate()
+		scale = scale_handler(options.glue) 
 		scale.zero()
+		scale.calibrate()
+		#scale.zero()
 	else: 
 		print("Unknown answer: '" + str(answer) + "', expected 'y' or 'n'")
 		print("Proceeding with assumed answer 'n'")
@@ -204,10 +206,11 @@ if __name__ == '__main__':
 					# coord_func=shift_f,
 					# clean_point=[x_s, y_s, z_s-1]
 					# )
+			safety_h = DRAWING_CFG[layer]['above']
 			kap_dict[layer] = drawing2(
 						DRAWING_CFG[layer]['file'], 
 						offset=kap_offset, 
-						hight=ref_h, 
+						hight=ref_h - safety_h, 
 						coord_func=shift_f, 
 						clean_point=[x_s, y_s, z_s-1]
 						)
@@ -238,13 +241,15 @@ if __name__ == '__main__':
 			#speed_mmPmin = 100
 			print('Calculated speed was: ' + str(speed_mmPmin) + ' mm/min')
 			sen.clear_droplet(machiene)
+			delay = 0.2
+			if DRAWING_CFG[layer]['is_encap']: delay = 0.5
 			print('Drawing '+layer+' with: '+ str(pressure_dict[layer])+ ' mbar, ' + str(flow_dict[layer])+ ' mg/s, ' + str(speed_mmPmin)+' mm/min')
 			sen.draw_lines(
 				machiene,
 				pressure_dict[layer],
 				speed_mmPmin, 
 				layer=layer, 
-				delay=0.2, 
+				delay=delay, 
 				up_first=True, 
 				)
 	print("Drawing took " + str(time.time() - start_draw) + "s")

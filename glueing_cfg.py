@@ -53,20 +53,24 @@ TABLE_HEIGHT = 35
 
 DRAWING_CFG = {
 	'kapton' : {
-		'file' : 'kapton_pigtail.dxf',
+		'file' : 'kapton_pigtail2.dxf',
 		'layer': 'kapton',
 		'mass' : 12.,
-		'desired_flow': 1.,
+		'desired_flow':   0.803261218705,
 		'flow_precision': 0.5,
-		'init_pressure': 367,
+		'init_pressure': 1100,
+		'above': 0.3,
+		'is_encap': False,
 	},
 	'pigtail_top' : {
 		'file' : 'kapton_pigtail.dxf',
 		'layer': 'pigtail_top',
 		'mass' : 0.06,
-		'desired_flow': 0.1,
-		'flow_precision': 0.1,
-		'init_pressure': 4000,
+		'desired_flow': 0.2,
+		'flow_precision': 0.2,
+		'init_pressure': 650,
+		'above': 0.3,
+		'is_encap': False,
 	},
 	'pigtail_bot' : {
 		'file' : 'kapton_pigtail.dxf',
@@ -75,15 +79,39 @@ DRAWING_CFG = {
 		'desired_flow': 0.2,
 		'flow_precision': 0.2,
 		'init_pressure': 650,
+		'above': 0.3,
+		'is_encap': False,
+	},
+	'pigtail_bot_encap' : {
+		'file' : 'kapton_pigtail.dxf',
+		'layer': 'pigtail_bot_encap',
+		'mass' : 1.5,
+		'desired_flow': 2.5,
+		'flow_precision': 0.5,
+		'init_pressure': 2500,
+		'above': 0.6,
+		'is_encap': True,
+	},
+	'hybrid_encap' : {
+		'file' : 'hybrid_encapsulation.dxf',
+		'layer': 'hybrid_encap',
+		'mass' : 20.,
+		'desired_flow': 2.5,
+		'flow_precision': 0.5,
+		'init_pressure': 0,
+		'above': 1.,
+		'is_encap': True,
 	},
 }
+
 
 
 JIG_CFG = {
 	'kapton_A':{
 		'offsets' : {
-			'table_position' : [80, 110],
-			'coordinate_origin' : [35.25, 11.75],
+			'table_position' : [26, 105],#[80, 110],
+			'coordinate_origin' : [35.25, 12.5],
+			'jig_hight': 15,
 		},
 		'probe': {
 			'probe_x':  'x-', 
@@ -100,18 +128,18 @@ JIG_CFG = {
 			'p3': [10, 120],
 			'max_height': 6,
 		},
-		'flow': {
-			'desired_flow': 10,
-		},
+		#'flow': {
+		#	'desired_flow': 10,
+		#},
 		'drawing': {
-			'hight': 5.5, # 5.3 + 0.2
-			'file' : 'kapton_pigtail.dxf',
+			'hight': 5.1, #5 +/-0.1 
+			#'file' : 'kapton_pigtail.dxf',
 		},
 	},
 	'kapton_B':{
 		'offsets' : {
 			'table_position' : [36, 110],
-			'coordinate_origin' : [2.25, 2], #[2.25, 3]
+			'coordinate_origin' : [2.25, -1], #[2.25, 3]
 			'jig_hight': 15,
 		},
 		'probe': {
@@ -133,13 +161,15 @@ JIG_CFG = {
 			'desired_flow': 1,
 		},
 		'drawing': {
-			'hight': 0.890,   #1.190,#1.090,           #0.912,#1.012, # 0.712 + 0.3
-			'file' : 'kapton_pigtail.dxf',
+			# 0.410 cloth thickness 0.32 sensor => 0.730 + 0.3 => 1.03
+			# 0.732 plexiglass => 1.142 => 1.442
+			'hight': 0.73,   #1.190,#1.090,           #0.912,#1.012, # 0.712 + 0.3
+			'file' : 'kapton_pigtail2.dxf',
 		},
 	},
 	'table':{
 		'offsets' : {
-			'table_position' : [10, 90],
+			'table_position' : [10, 85],
 			'coordinate_origin' : [0, 0.1],
 			'jig_hight': 3,
 		},
@@ -162,8 +192,36 @@ JIG_CFG = {
 			'desired_flow': 0.5,
 		},
 		'drawing': {
-			'hight': 0.2, # 0.712 + 0.3
+			'hight': 0., # 0.712 + 0.3
 			'file' : 'kapton_pigtail.dxf',
+		},
+	},
+	'hybrid':{
+		'offsets' : {
+			'table_position' : [10, 85],
+			'coordinate_origin' : [24, 25],
+			'jig_hight': 3,
+		},
+		'probe': {
+			'probe_x':  'x+', 
+			'probe_y':  'y+',
+			'dx':       98, 
+			'dy':       98,  
+			'dth':      1,  
+			'prb_h':    0.75,
+			'jig_file': 'hybrid_jig_coo.py'
+		},
+		'tilt': {
+			'p1': [15, 5],
+			'p2': [85, 5],
+			'p3': [15, 85],
+			'max_height': 6,
+		},
+		#'flow': {
+		#	'desired_flow': 0.5,
+		#},
+		'drawing': {
+			'hight': 0., # 0.712 + 0.3
 		},
 	},
 }

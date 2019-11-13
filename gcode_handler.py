@@ -674,10 +674,10 @@ def make_jig_coord(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1.15, 
 		machiene.up()
 		if probe_x[-1] == '+':
 			dxx = 15
-			x_geuss_2 = max(x_guess - dxx, 0)
+			x_geuss_2 = max(x_guess - dxx, -1)
 		else:
 			dxx = 0
-			x_geuss_2 = max(x_guess - dxx, 0)
+			x_geuss_2 = max(x_guess - dxx, -1)
 		machiene.gotoxy(x_geuss_2, y_guess + dy)
 		machiene.down(up - 6)
 		th_h = machiene.probe_z(speed=25)[2] + dth
@@ -1068,6 +1068,7 @@ class drawing2():
 		machine.up()
 		
 	def layer_line_length(self, layer):
+		print(self.drawing)
 		lines = self.drawing[layer]['lines']
 		distance = 0
 		for line in lines:

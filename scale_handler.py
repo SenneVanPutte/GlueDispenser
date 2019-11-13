@@ -16,8 +16,8 @@ class scale_handler():
 	"""
 	connection to the calibration scale
 	"""
-	def __init__(self):
-		ser = serial.Serial(r"COM4", baudrate=1000000, xonxoff=False, timeout=0, ask_glue_prod=False)
+	def __init__(self, ask_glue_prod=False):
+		ser = serial.Serial(r"COM4", baudrate=1000000, xonxoff=False, timeout=0)
 		self.clear_time = 0.3
 		# Sample rate in sec
 		#self.read_freq = 0.125
@@ -41,6 +41,13 @@ class scale_handler():
 		
 		record_file.write("#\t ____START_SCALE_SESSION____\n")
 		record_file.write("#\t TIME: " + datetime.datetime.now().strftime("%H:%M:%S") + "\n")
+		record_file.close()
+		
+		self.flow_log="flow_"+day_str+".log"
+		if not os.path.isfile(self.flow_log): record_file = open(self.flow_log, 'w')
+		else: record_file = open(self.flow_log, 'a')
+		record_file.write("#\t ____START_FLOW_SESSION____\n")
+		record_file.write("#\t TIME: " + datetime.datetime.now().strftime("%H:%M:%S") + "\n")
 		if ask_glue_prod: 
 			make_time = raw_input('Enter glue production time (hh:mm): ')
 			make_time_splt = make_time.split(':')
@@ -52,13 +59,6 @@ class scale_handler():
 			min = int(make_time_splt[1])
 			ts = time.mktime(datetime.datetime(year, month, day, hour, min).timetuple())
 			record_file.write("#\t GLUE TS: " + str(ts) + "\n")
-		record_file.close()
-		
-		self.flow_log="flow_"+day_str+".log"
-		if not os.path.isfile(self.flow_log): record_file = open(self.flow_log, 'w')
-		else: record_file = open(self.flow_log, 'a')
-		record_file.write("#\t ____START_FLOW_SESSION____\n")
-		record_file.write("#\t TIME: " + datetime.datetime.now().strftime("%H:%M:%S") + "\n")
 		record_file.close()
 		
 		
@@ -575,8 +575,9 @@ def delay_and_flow_regulation(machiene, scale, pos, init_pressure, desired_flow,
 	'''
 
 	machiene.gotoxy(position=pos)
+	machiene.down(7)
 	scale_height = machiene.probe_z(speed=25)[2]
-	needle_height = scale_height - 1
+	needle_height = scale_height - 2
 	
 	n_samples = 30
 	relaxation_time = n_samples*scale.read_freq

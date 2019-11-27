@@ -1,6 +1,6 @@
 from glueing_cfg import JIG_OFFSET_CFG, sum_offsets, JIG_CFG, DRAWING_CFG
 from gcode_handler import gcode_handler, drawing, make_jig_coord, make_quick_func, drawing2
-from scale_handler import scale_handler, delay_and_flow_regulation
+from scale_handler import scale_handler, delay_and_flow_regulation, read_glue_type, load_f_and_p, write_f_and_p
 import json
 import time 
 
@@ -22,7 +22,7 @@ if __name__ == '__main__':
 	machiene.init_code()
 	
 	# Table height
-	machiene.down(28)
+	machiene.down(28) #15 for finger
 	[x_s, y_s, z_s] = machiene.probe_z(speed=50)
 	
 	# Find kapton and kapton height
@@ -99,6 +99,9 @@ if __name__ == '__main__':
 	print("Making board tilt took " + str(time.time() - start_tilt) + "s")
 	
 	# Flow Calibration
+	prev_flow_file = 'cache/prev_flow.py' 
+	scale = scale_handler(options.glue)
+	glue_type = read_glue_type(scale.flow_log)
 	scale_pos = [350, 200]
 	start_flow = time.time()
 	f_c = False
@@ -112,7 +115,7 @@ if __name__ == '__main__':
 	elif answer == "y": 
 		f_c = True
 		#init_pressure = start_pressure
-		scale = scale_handler(options.glue) 
+		 
 		scale.zero()
 		scale.calibrate()
 		#scale.zero()
@@ -147,6 +150,9 @@ if __name__ == '__main__':
 		
 		# Do measurement
 		if f_c: 
+			mass_lim = 150
+			if 'SY186' in glue_type: mass_lim = 250
+			print(glue_type)
 			pressure, delay, measured_flow = delay_and_flow_regulation(
 												machiene, 
 												scale, 
@@ -154,20 +160,24 @@ if __name__ == '__main__':
 												init_pressure, 
 												DRAWING_CFG[layer]['desired_flow'], 
 												precision=DRAWING_CFG[layer]['flow_precision'], 
-												mass_limit=150, 
+												mass_limit=mass_lim, 
 												threshold=20, 
 												show_data=True, 
 												init=True
 												)
+		# Load flow and pressure
 		else:
 			#init_pressure = None
-			pressure = DRAWING_CFG[layer]['init_pressure']
-			measured_flow = DRAWING_CFG[layer]['desired_flow']
+			#pressure = DRAWING_CFG[layer]['init_pressure']
+			#measured_flow = DRAWING_CFG[layer]['desired_flow']
+			measured_flow, pressure = load_f_and_p(prev_flow_file)
 			
 		# Set pressure and flow
 		flow_dict[layer] = measured_flow
 		pressure_dict[layer] = pressure
 		prev_desired_flow[layer] = DRAWING_CFG[layer]['desired_flow']
+		if f_c: write_f_and_p(prev_flow_file, measured_flow, pressure)
+		
 			
 	machiene.up()
 	
@@ -242,9 +252,10 @@ if __name__ == '__main__':
 			print('Calculated speed was: ' + str(speed_mmPmin) + ' mm/min')
 			sen.clear_droplet(machiene)
 			delay = 0.2
-			if DRAWING_CFG[layer]['is_encap']: delay = 0.5
+			if 'SY186' in glue_type: delay = 0.7
+			#if DRAWING_CFG[layer]['is_encap']: delay = 0.5
 			print('Drawing '+layer+' with: '+ str(pressure_dict[layer])+ ' mbar, ' + str(flow_dict[layer])+ ' mg/s, ' + str(speed_mmPmin)+' mm/min')
-			sen.draw_lines(
+			sen.draw_robust(
 				machiene,
 				pressure_dict[layer],
 				speed_mmPmin, 
@@ -252,6 +263,14 @@ if __name__ == '__main__':
 				delay=delay, 
 				up_first=True, 
 				)
+			# sen.draw_layer(
+				# machiene,
+				# pressure_dict[layer],
+				# speed_mmPmin, 
+				# layer=layer, 
+				# delay=delay, 
+				# up_first=True, 
+				# )
 	print("Drawing took " + str(time.time() - start_draw) + "s")
 
 	machiene.up()

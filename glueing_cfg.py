@@ -53,7 +53,7 @@ TABLE_HEIGHT = 35
 
 DRAWING_CFG = {
 	'kapton' : {
-		'file' : 'kapton_pigtail2.dxf',
+		'file' : 'drawings/kapton_pigtail.dxf',
 		'layer': 'kapton',
 		'mass' : 12.,
 		'desired_flow':   0.803261218705,
@@ -63,7 +63,7 @@ DRAWING_CFG = {
 		'is_encap': False,
 	},
 	'pigtail_top' : {
-		'file' : 'kapton_pigtail.dxf',
+		'file' : 'drawings/kapton_pigtail.dxf',
 		'layer': 'pigtail_top',
 		'mass' : 0.06,
 		'desired_flow': 0.2,
@@ -73,7 +73,7 @@ DRAWING_CFG = {
 		'is_encap': False,
 	},
 	'pigtail_bot' : {
-		'file' : 'kapton_pigtail.dxf',
+		'file' : 'drawings/kapton_pigtail.dxf',
 		'layer': 'pigtail_bot',
 		'mass' : 0.05,
 		'desired_flow': 0.2,
@@ -83,23 +83,73 @@ DRAWING_CFG = {
 		'is_encap': False,
 	},
 	'pigtail_bot_encap' : {
-		'file' : 'kapton_pigtail.dxf',
+		'file' : 'drawings/kapton_pigtail.dxf',
 		'layer': 'pigtail_bot_encap',
 		'mass' : 1.5,
-		'desired_flow': 2.5,
+		'desired_flow': 10.,
 		'flow_precision': 0.5,
 		'init_pressure': 2500,
 		'above': 0.6,
 		'is_encap': True,
 	},
 	'hybrid_encap' : {
-		'file' : 'hybrid_encapsulation.dxf',
+		'file' : 'drawings/hybrid_encapsulation.dxf',
 		'layer': 'hybrid_encap',
-		'mass' : 20.,
-		'desired_flow': 2.5,
+		'mass' : 240.,
+		'desired_flow': 1.7,
 		'flow_precision': 0.5,
-		'init_pressure': 0,
+		'init_pressure': 1000,
+		'above': 2.5,
+		'is_encap': True,
+	},
+	'hybrid_encap2' : {
+		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'layer': 'hybrid_encap2',
+		'mass' : 240.,
+		'desired_flow': 1.7,
+		'flow_precision': 0.5,
+		'init_pressure': 665,
+		'above': 2.5,
+		'is_encap': True,
+	},
+	'hybrid_encap3' : {
+		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'layer': 'hybrid_encap3',
+		'mass' : 50.,
+		'desired_flow':  1.27564142925,
+		'flow_precision': 0.5,
+		'init_pressure': 800,
+		'above': 2.5,
+		'is_encap': True,
+	},
+	'hybrid_encap4' : {
+		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'layer': 'hybrid_encap4',
+		'mass' : 5.,
+		'desired_flow': 1.7,
+		'flow_precision': 0.5,
+		'init_pressure': 1000,
 		'above': 1.,
+		'is_encap': True,
+	},
+	'spiral_7l' : {
+		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'layer': 'hybrid_encap5',
+		'mass' : 400.,
+		'desired_flow': 1.7,
+		'flow_precision': 0.5,
+		'init_pressure': 650,
+		'above': 2.5,
+		'is_encap': True,
+	},
+	'spiral_9' : {
+		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'layer': 'hybrid_encap6',
+		'mass' : 400.,
+		'desired_flow': 1.7,
+		'flow_precision': 0.5,
+		'init_pressure': 800,
+		'above': 2.5,
 		'is_encap': True,
 	},
 }
@@ -120,7 +170,7 @@ JIG_CFG = {
 			'dy':       100,  
 			'dth':      1, 
 			'prb_h':    0.75,
-			'jig_file': 'kapton_jig_coo.py'
+			'jig_file': 'cache/kapton_jig_coo.py'
 		},
 		'tilt': {
 			'p1': [10, -5],
@@ -149,7 +199,7 @@ JIG_CFG = {
 			'dy':       105,  
 			'dth':      1,  
 			'prb_h':    0.75,
-			'jig_file': 'kapton_B_jig_coo.py'
+			'jig_file': 'cache/kapton_B_jig_coo.py'
 		},
 		'tilt': {
 			'p1': [0, -5],
@@ -180,7 +230,7 @@ JIG_CFG = {
 			'dy':       98,  
 			'dth':      1,  
 			'prb_h':    0.75,
-			'jig_file': 'table_jig_coo.py'
+			'jig_file': 'cache/table_jig_coo.py'
 		},
 		'tilt': {
 			'p1': [15, 5],
@@ -209,7 +259,7 @@ JIG_CFG = {
 			'dy':       98,  
 			'dth':      1,  
 			'prb_h':    0.75,
-			'jig_file': 'hybrid_jig_coo.py'
+			'jig_file': 'cache/hybrid_jig_coo.py'
 		},
 		'tilt': {
 			'p1': [15, 5],
@@ -222,6 +272,35 @@ JIG_CFG = {
 		#},
 		'drawing': {
 			'hight': 0., # 0.712 + 0.3
+		},
+	},
+	'table_hybrid':{
+		'offsets' : {
+			'table_position' : [10, 85],
+			'coordinate_origin' : [24, 25.5],#Dark green jig [24.5, 24.5],
+			'jig_hight': 3,
+		},
+		'probe': {
+			'probe_x':  'x+', 
+			'probe_y':  'y+',
+			'dx':       98, 
+			'dy':       98,  
+			'dth':      1,  
+			'prb_h':    0.75,
+			'jig_file': 'cache/table_jig_coo.py'
+		},
+		'tilt': {
+			'p1': [15, 5],
+			'p2': [85, 5],
+			'p3': [15, 85],
+			'max_height': 6,
+		},
+		'flow': {
+			'desired_flow': 0.5,
+		},
+		'drawing': {
+			'hight': 0., # 0.712 + 0.3
+			'file' : 'kapton_pigtail.dxf',
 		},
 	},
 }

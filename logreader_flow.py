@@ -75,36 +75,168 @@ for fil in file_lst:
 #print(log_lst)
 
 # inp_Time = raw_input('enter Time: ')
-# inp_Time_splt = inp_Time.split(':')
+# inp_time_splt = inp_Time.split(':')
 # now = datetime.datetime.now()
-# year = int(inp_Time_splt[0])
-# month = int(inp_Time_splt[1])
-# day = int(inp_Time_splt[2])
-# hour = int(inp_Time_splt[3])
-# min = int(inp_Time_splt[4])
+# year = int(inp_time_splt[0])
+# month = int(inp_time_splt[1])
+# day = int(inp_time_splt[2])
+# hour = int(inp_time_splt[3])
+# min = int(inp_time_splt[4])
 # #ts = calendar.timegm(datetime.datetime(year, month, day, hour, min).timetuple())
 # ts = time.mktime(datetime.datetime(year, month, day, hour, min).timetuple())
 # print(ts)
 # print(time.time())
 
+# Divide data
+data = {}
+data['PT601'] = {}
+data['SY186'] = {}
+
+for key in data:
+	data[key]['time'] = {}
+	data[key]['flow'] = {}
+	data[key]['pres'] = {}
+	data[key]['relt'] = {}
+	data[key]['time']['tot'] = []
+	data[key]['flow']['tot'] = []
+	data[key]['pres']['tot'] = []
+	data[key]['relt']['tot'] = []
+	
+for log in log_lst:
+	date = log.replace('flow_', '').replace('.log', '')
+	log_file = open(log, 'r')
+	lines = log_file.readlines()
+	log_file.close()
+		
+	glue_key = 'PT601'
+	ref_ts = 0.
+	#print(data)
+	for line in lines:
+		if '#' in line: 
+			splt_line = line.replace('\n', '').split(' ')
+			if 'GLUE TYPE' in line: glue_key = splt_line[-1]
+			elif 'GLUE TS' in line: ref_ts = float(splt_line[-1])
+			continue
+		if date not in data[glue_key]['time']:
+			data[glue_key]['time'][date] = []
+			data[glue_key]['flow'][date] = []
+			data[glue_key]['pres'][date] = []
+			data[glue_key]['relt'][date] = []
+			#print(data)
+	    #if date not in data[glue_key]['time']:
+            #    	data[glue_key]['time'][date] = []
+		
+		line_splt = line.replace('\n', '').split('\t')
+		t = float(line_splt[0])
+		p = float(line_splt[2])
+		f = float(line_splt[4])
+		
+		if f < 0.: continue
+		if p > 5600: continue
+		
+		data[glue_key]['time']['tot'].append(t)
+		data[glue_key]['flow']['tot'].append(f)
+		data[glue_key]['pres']['tot'].append(p)
+		data[glue_key]['relt']['tot'].append((t - ref_ts)/60.)
+		
+		data[glue_key]['time'][date].append(t)
+		data[glue_key]['flow'][date].append(f)
+		data[glue_key]['pres'][date].append(p)
+		data[glue_key]['relt'][date].append((t - ref_ts)/60.)
+	
+# Plot
+#print(data['SY186'])
+for glue in data:
+	print(glue)
+	#fonp_tot = []
+	#for idx in range(len(data[glue]['time']['tot'])):
+	#	f = data[glue_key]['flow']['tot'][idx]
+	#	p = data[glue_key]['pres']['tot'][idx]
+	#	print(f)
+	#	print(p)
+	#	fonp_tot.append(f/(p/1000.))
+	fonp_tot = [data[glue]['flow']['tot'][idx]/(data[glue]['pres']['tot'][idx]/1000.) for idx in range(len(data[glue]['time']['tot']))]
+	fonp_tot_log = [math.log(fonp) for fonp in fonp_tot]
+
+	fig, ax = pyplot.subplots() 
+	ax.scatter(data[glue]['time']['tot'], fonp_tot, label='measurement')
+	ax.set(xlabel='time (s)', ylabel='flow/pressure (mg/s bar)', title=glue)
+	pyplot.show()
+	
+	fonp_dict = {}
+	fig, ax = pyplot.subplots() 
+	for date in data[glue]['time']:
+		if 'tot' in date: continue
+		fonp_dict[date] = [data[glue]['flow'][date][idx]/(data[glue]['pres'][date][idx]/1000.) for idx in range(len(data[glue]['time'][date]))]
+		ax.scatter(data[glue]['relt'][date], fonp_dict[date], label=date)
+	ax.legend(loc='upper right')
+	ax.set(xlabel='time (min)', ylabel='flow/pressure (mg/s bar)', title=glue)
+	ax.set_yscale('log')
+	pyplot.show()
+	
+	fig, ax = pyplot.subplots() 
+	a, b, a_int, b_int, False = lin_reg(data[glue]['relt']['tot'], fonp_tot_log)
+	max_t = max(data[glue]['relt']['tot'])
+	min_t = min(data[glue]['relt']['tot'])
+	t_step = (max_t - min_t)/200.
+	time_sim = list(drange(min_t, max_t + t_step, t_step))#copy.deepcopy(time_tot)
+	fonp_sim = [math.exp(a + b*t) for t in time_sim]
+	fonp_sim_up = [math.exp(a_int[1] + b_int[1]*t) for t in time_sim]
+	fonp_sim_dn = [math.exp(a_int[0] + b_int[0]*t) for t in time_sim]
+
+	#time_sim, fonp_sim = zip(*sorted(zip(time_sim, fonp_sim)))
+
+	ax.scatter(data[glue]['relt']['tot'], fonp_tot, label='data')
+	ax.plot(time_sim, fonp_sim, 'r-', label='fit')
+	ax.plot(time_sim, fonp_sim_up, 'y-', label='fit up')
+	ax.plot(time_sim, fonp_sim_dn, 'y-', label='fit down')
+	ax.legend(loc='lower left')
+	ax.set(xlabel='time (min)', ylabel='flow/pressure (mg/s bar)', title=glue)
+	ax.set_yscale('log')
+	pyplot.show()
+	
+	fig, ax = pyplot.subplots() 
+	press_expt_dict = {}
+	for date in data[glue]['time']:
+		if 'tot' in date: continue
+		press_expt_dict[date] = []
+		for idx, pres in enumerate(data[glue]['pres'][date]):
+			press_expt_dict[date].append(pres*(math.exp(a + b*data[glue]['relt'][date][idx])))
+		ax.scatter(press_expt_dict[date], data[glue]['flow'][date], label=date)
+	#press_expt = []
+	#for idx, pres in enumerate(data[glue]['pres']['tot']):
+	#	press_expt.append(pres*(math.exp(a + b*data[glue]['relt']['tot'][idx])))
 
 
-Time_lst = []
+	#time_sim, fonp_sim = zip(*sorted(zip(time_sim, fonp_sim)))
+
+	#ax.scatter(press_expt, data[glue]['flow']['tot'], label='data')
+	ax.legend(loc='lower right')
+	ax.set(xlabel='Pressure*exp(a + b*Time) (mbar)', ylabel='flow (mg/s)', title='')
+	#ax.set_yscale('log')
+	pyplot.show()
+	
+exit()	
+		
+	
+
+time_lst = []
 flow_lst = []
 pres_lst = []
 fonp_lst = []
 
-Time_dict = {}
+time_dict = {}
 flow_dict = {}
 pres_dict = {}
 fonp_dict = {}
 glts_dict = {}
+gtyp_dict = {}
 for log in log_lst:
 	log_file = open(log, 'r')
 	lines = log_file.readlines()
 	log_file.close()
 	
-	Time_dict[log] = []
+	time_dict[log] = []
 	flow_dict[log] = []
 	pres_dict[log] = []
 	fonp_dict[log] = []
@@ -127,12 +259,12 @@ for log in log_lst:
 		if flow < 0.: continue
 		if pres > 5600: continue
 		
-		Time_lst.append(Time)
+		time_lst.append(Time)
 		pres_lst.append(pres)
 		flow_lst.append(flow)
 		fonp_lst.append(flow/(pres + 0.))
 		
-		Time_dict[log].append(Time)
+		time_dict[log].append(Time)
 		pres_dict[log].append(pres)
 		flow_dict[log].append(flow)
 		fonp_dict[log].append(flow/(pres/1000. + 0.))
@@ -141,9 +273,9 @@ for log in log_lst:
  
 		
 fig, ax = pyplot.subplots() 
-#ax.scatter(Time_lst, flow_lst, label='measurement')
+#ax.scatter(time_lst, flow_lst, label='measurement')
 #ax.scatter(pres_lst, flow_lst, label='measurement')
-ax.scatter(Time_lst, fonp_lst, label='measurement')
+ax.scatter(time_lst, fonp_lst, label='measurement')
 #ax.set(xlabel='Time (s)', ylabel='flow (mg/s)', title='')
 #ax.set(xlabel='pressure (mbar)', ylabel='flow (mg/s)', title='')
 ax.set(xlabel='Time (s)', ylabel='flow/pressure (mg/s mbar)', title='')
@@ -156,13 +288,13 @@ flow_tot = []
 fonp_tot = []
 fonp_tot_log = []
 
-for log in Time_dict:
-	Time = Time_dict[log]
+for log in time_dict:
+	Time = time_dict[log]
 	fonp = fonp_dict[log]
 	press = pres_dict[log]
 	flow = flow_dict[log]
 	
-	Time_rel = []
+	time_rel = []
 	ts = glts_dict[log]
 	for t in Time:
 		rel_timy = []
@@ -170,14 +302,14 @@ for log in Time_dict:
 			t_diff = t - tsy
 			if t_diff < 0.: continue
 			else: rel_timy.append(t_diff)
-		if len(rel_timy) == 0: Time_rel.append(t - Time[0])
-		elif len(rel_timy) == 1: Time_rel.append(rel_timy[0])
-		else: Time_rel.append(min(rel_timy))
+		if len(rel_timy) == 0: time_rel.append(t - Time[0])
+		elif len(rel_timy) == 1: time_rel.append(rel_timy[0])
+		else: time_rel.append(min(rel_timy))
 	
-	time_rel_rs = [t/60. for t in Time_rel]
+	time_rel_rs = [t/60. for t in time_rel]
 	fonp_log = [math.log(r) for r in fonp]
 	
-	#Time_rel = [(t - Time[0])/60. for t in Time]
+	#time_rel = [(t - Time[0])/60. for t in Time]
 	time_tot.extend(time_rel_rs)
 	fonp_tot.extend(fonp)
 	press_tot.extend(press)

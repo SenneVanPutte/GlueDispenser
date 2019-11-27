@@ -6,7 +6,7 @@ from scale_handler import scale_handler, delay_and_flow_regulation
 if __name__ == '__main__':
 	machiene = gcode_handler()
 	machiene.init_code()
-	probe_speed = 6
+	probe_speed = 25
 	
 	machiene.gotoxy(36, 110)
 	machiene.down(15)

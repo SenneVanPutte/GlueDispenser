@@ -11,6 +11,7 @@ import os
 import time
 import math
 from scipy.stats import t
+import json
 
 class scale_handler():
 	"""
@@ -29,11 +30,11 @@ class scale_handler():
 		self.serialport_pnp = io.TextIOWrapper(io.BufferedRWPair(ser, ser, buffer_size=64*1024), newline='\n')
 		
 		day_str = datetime.datetime.now().strftime("%Y_%b_%d")
-		self.glue_log = "glue_"+day_str+".log"
+		self.glue_log = "log/glue_"+day_str+".log"
 		if not os.path.isfile(self.glue_log): open(self.glue_log, 'w+')
 		
 		self.conf_avg()
-		self.record_file="scale_"+day_str+".log"
+		self.record_file="log/scale_"+day_str+".log"
 		if not os.path.isfile(self.record_file): 
 			record_file = open(self.record_file, 'w')
 			ask_glue_prod = True
@@ -43,13 +44,15 @@ class scale_handler():
 		record_file.write("#\t TIME: " + datetime.datetime.now().strftime("%H:%M:%S") + "\n")
 		record_file.close()
 		
-		self.flow_log="flow_"+day_str+".log"
+		self.flow_log="log/flow_"+day_str+".log"
 		if not os.path.isfile(self.flow_log): record_file = open(self.flow_log, 'w')
 		else: record_file = open(self.flow_log, 'a')
 		record_file.write("#\t ____START_FLOW_SESSION____\n")
 		record_file.write("#\t TIME: " + datetime.datetime.now().strftime("%H:%M:%S") + "\n")
 		if ask_glue_prod: 
-			make_time = raw_input('Enter glue production time (hh:mm): ')
+			glue_type = raw_input('Enter glue type time (PT601 or SY186): ')
+			record_file.write("#\t GLUE TYPE: " + glue_type + "\n")
+			make_time = raw_input('Enter glue production time    (hh:mm): ')
 			make_time_splt = make_time.split(':')
 			now = datetime.datetime.now()
 			year = now.year
@@ -583,7 +586,7 @@ def delay_and_flow_regulation(machiene, scale, pos, init_pressure, desired_flow,
 	relaxation_time = n_samples*scale.read_freq
 	#relaxation_time = scale.read_freq*scale.n_avg
 	
-	time_out = (mass_limit + 50 + 0.)/((desired_flow + 0.)/2.)
+	time_out = max((mass_limit + 50 + 0.)/((desired_flow + 0.)/2.), 100)
 	print('Time out: ' + str(time_out) + ' s')
 	#time_out = 120.
 	
@@ -959,6 +962,32 @@ def lin_reg(x, y, alpha=0.95):
 	#print('fit param: n=' +str(n) + ', a=' + str(a) + ', s_a=' +str(s_a) + ', b=' + str(b) + ', s_b=' + str(s_b) + 't_val=' + str(t_val))
 	
 	return a, b, a_int, b_int, False
+	
+def read_glue_type(flow_file):
+	f_file = open(flow_file, 'r')
+	lines = f_file.readlines()
+	f_file.close()
+	glue_type = 'PT601'
+	for line in lines:
+	
+		if 'GLUE TYPE' in line:
+			splt_line = line.replace('\n', '').split(' ')
+			glue_type = splt_line[-1]
+	return glue_type
+	
+def load_f_and_p(cache_file):
+	c_file = open(cache_file, "r")
+	data = json.load(c_file)
+	c_file.close()
+	return data['flow'], data['pressure']
+	
+def write_f_and_p(cache_file, flow, pressure):
+	pf_dict = {'flow': flow, 'pressure': pressure}
+	c_file = open(cache_file, "w")
+	c_file.write(json.dumps(pf_dict))
+	c_file.close()
+	
+	
 	
 		
 if __name__ == "__main__":

@@ -66,14 +66,14 @@ class gcode_handler():
 		# Log files
 		day_str = datetime.datetime.now().strftime("%Y_%b_%d")
 		
-		record_file="gcode_"+day_str+".log"
+		record_file="log/gcode_"+day_str+".log"
 		if not os.path.isfile(record_file): self.log_file = open(record_file, 'w+')
 		else: self.log_file = open(record_file, 'a+')
 		#self.log_file = open("gcode.log", "w+")
 		self.log_file.write("#\t ____START_G_CODE_SESSION____\n")
 		self.log_file.write("#\t TIME: " + datetime.datetime.now().strftime("%H:%M:%S") + "\n")
 		
-		self.glue_log = "glue_"+day_str+".log"
+		self.glue_log = "log/glue_"+day_str+".log"
 		if not os.path.isfile(self.glue_log): open(self.glue_log, 'w+')
 		
 		
@@ -124,7 +124,7 @@ class gcode_handler():
 			self.down(up)
 		else:
 			self.down(max(z_dwn - up_rel, 0))
-		#time.sleep(5)
+		#time.sleep(0.5)
 		self.send_bloc("$zsx=2 ")
 		
 		self.write_glue_log("probe result: "+str(position[-1]), time_stamp=True)
@@ -375,16 +375,16 @@ class gcode_handler():
 		self.set_tilt()
 		self.gotoxy(position=point1)
 		self.down(max_height)
-		self.probe_z(speed=50, up_rel=1)
+		self.probe_z(speed=50, up_rel=2)
 		p_1 = self.probe_z(speed=probe_speed)
 		self.gotoxy(position=point2)
 		self.down(max_height)
-		self.probe_z(speed=50, up_rel=1)
+		self.probe_z(speed=50, up_rel=2)
 		p_2 = self.probe_z(speed=probe_speed)
 		self.gotoxy(position=point1)
 		self.gotoxy(position=point3)
 		self.down(max_height)
-		self.probe_z(speed=50, up_rel=1)
+		self.probe_z(speed=50, up_rel=2)
 		p_3 = self.probe_z(speed=probe_speed)
 		
 		z_1 = p_1[2]
@@ -996,18 +996,58 @@ class drawing2():
 			#	self.drawing["glue_drops"].append(e.dxf.center)
 			#print(e.dxftype(), e.dxf.layer)
 			
-	def draw_lines(self, machine, pressure, speed, layer=None, set_pen=False, delay=0.1, up_first=True, rel_pos_start=None, rel_pos_end=None):
+	def draw_robust(self, machine, pressure, speed, layer, set_pen=False, delay=0.1, up_first=True):
+		
+		lines = self.drawing[layer]['lines']
+		lsegmen_dict = {}
+		lsegment_count = 0
+		pp = lines[0][0]
+		for line in lines:
+			sp = line[0]
+			ep = line[1]
+			if sp != pp: lsegment_count += 1
+			if lsegment_count not in lsegmen_dict: lsegmen_dict[lsegment_count] = []
+			lsegmen_dict[lsegment_count].append(line)
+			pp = ep
+			
+		start_h = self.hight
+		for seg in range(lsegment_count+1):
+			dlines = lsegmen_dict[seg]
+			satisfied = False
+			attempt = 0
+			while not satisfied:
+				self.clear_droplet(machine)
+				self.hight = start_h + attempt*0.1
+				self.draw_lines(machine, pressure, speed, dlines, set_pen=False, delay=0.1, up_first=True)
+				answer = raw_input('Was line drawn correltly? (y/n) ')
+				if answer == 'y':
+					satisfied = True
+					self.hight = start_h
+				attempt += 1
+			
+			
+			
+			
+			
+
+		
+	
+	def draw_layer(self, machine, pressure, speed, layer, set_pen=False, delay=0.1, up_first=True):
+		lines = self.drawing[layer]['lines']
+		self.draw_lines(machine, pressure, speed, lines, set_pen, delay, up_first)
+			
+	def draw_lines(self, machine, pressure, speed, lines, set_pen=False, delay=0.1, up_first=True):
 		"""
 		Draw line function
 		By default draws loaded lines
 		costum lines can be drawn by setting the rel_pos input variables
 		"""
 		
-		if not rel_pos_start is None:
-			lines=[[[rel_pos_start[0], rel_pos_start[1]], [rel_pos_end[0], rel_pos_end[1]]]]
-		elif not layer is None:
-			lines = self.drawing[layer]['lines']
-		else: raise ValueError('Lines not set')
+		#if not rel_pos_start is None:
+		#	lines=[[[rel_pos_start[0], rel_pos_start[1]], [rel_pos_end[0], rel_pos_end[1]]]]
+		#elif not layer is None:
+		#	lines = self.drawing[layer]['lines']
+		#else: raise ValueError('Lines not set')
 		
 		# Check input config
 		hight = self.hight
@@ -1068,7 +1108,7 @@ class drawing2():
 		machine.up()
 		
 	def layer_line_length(self, layer):
-		print(self.drawing)
+		#print(self.drawing)
 		lines = self.drawing[layer]['lines']
 		distance = 0
 		for line in lines:

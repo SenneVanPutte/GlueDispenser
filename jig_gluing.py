@@ -23,14 +23,14 @@ if __name__ == '__main__':
 	
 	# Table height
 	machiene.down(28) #15 for finger
-	[x_s, y_s, z_s] = machiene.probe_z(speed=50)
+	[x_s, y_s, z_s] = machiene.probe_z(speed=100)
 	
 	# Find kapton and kapton height
 	#kapton_og = [103, 92]
 	kapton_og = JIG_CFG[jig_key]['offsets']['table_position']
 	machiene.gotoxy(kapton_og[0], kapton_og[1])
 	machiene.down(z_s - JIG_CFG[jig_key]['offsets']['jig_hight'] -3)
-	[x_t, y_t, z_t] = machiene.probe_z(speed=25)
+	[x_t, y_t, z_t] = machiene.probe_z(speed=100)
 	print([x_t, y_t, z_t])
 	if z_s - z_t < JIG_CFG[jig_key]['offsets']['jig_hight'] - 2:
 		answer = raw_input("Difference was " + str(z_s - z_t) + " missed board? (y/n) ")
@@ -152,6 +152,7 @@ if __name__ == '__main__':
 		if f_c: 
 			mass_lim = 150
 			if 'SY186' in glue_type: mass_lim = 250
+			if 'WATER' in glue_type: mass_lim = 500
 			print(glue_type)
 			pressure, delay, measured_flow = delay_and_flow_regulation(
 												machiene, 
@@ -250,7 +251,7 @@ if __name__ == '__main__':
 			speed_mmPmin = total_line_length_mm/((total_mass_mg/flow_dict[layer])/60.)
 			#speed_mmPmin = 100
 			print('Calculated speed was: ' + str(speed_mmPmin) + ' mm/min')
-			sen.clear_droplet(machiene)
+			#sen.clear_droplet(machiene)
 			delay = 0.2
 			if 'SY186' in glue_type: delay = 0.7
 			#if DRAWING_CFG[layer]['is_encap']: delay = 0.5
@@ -259,7 +260,7 @@ if __name__ == '__main__':
 				machiene,
 				pressure_dict[layer],
 				speed_mmPmin, 
-				layer=layer, 
+				layer=DRAWING_CFG[layer]['layer'], 
 				delay=delay, 
 				up_first=True, 
 				)

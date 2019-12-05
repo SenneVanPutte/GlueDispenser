@@ -9,7 +9,7 @@ import matplotlib
 from matplotlib import pyplot
 from scale_handler import lin_reg
 
-LOG_DIR = '.'
+LOG_DIR = 'log/'
 month_dict = dict((k,v) for v,k in enumerate(calendar.month_abbr))
 
 up_date = '2019_Dec_11'
@@ -91,6 +91,7 @@ for fil in file_lst:
 data = {}
 data['PT601'] = {}
 data['SY186'] = {}
+data['WATER'] = {}
 
 for key in data:
 	data[key]['time'] = {}
@@ -104,7 +105,7 @@ for key in data:
 	
 for log in log_lst:
 	date = log.replace('flow_', '').replace('.log', '')
-	log_file = open(log, 'r')
+	log_file = open(LOG_DIR+log, 'r')
 	lines = log_file.readlines()
 	log_file.close()
 		
@@ -147,6 +148,7 @@ for log in log_lst:
 # Plot
 #print(data['SY186'])
 for glue in data:
+	if 'WATER' in glue or 'AIR' in glue: continue 
 	print(glue)
 	#fonp_tot = []
 	#for idx in range(len(data[glue]['time']['tot'])):

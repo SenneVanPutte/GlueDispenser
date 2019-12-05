@@ -7,3 +7,6 @@ Depends on:
 DXF file convention:
 - dots must de draw as points in layer "points"
 - layer "border" contains the contour of the sensor (test purpose)
+
+LitePlacer G-code and commands:
+https://github.com/synthetos/TinyG/wiki/TinyG-Configuration-for-Firmware-Version-0.97

@@ -396,7 +396,7 @@ class scale_handler():
 					prc_str = '[' + '='*int(40*progress) + ' '*(40 - int(40*progress)) +']'
 					progress_str = '{} [{:6.4} %]'.format(prc_str, progress*100)
 					#print '{} {:6.4} {:6.4} {:6.4} in: {:6.4}s ETA: {:6.4}s {}\r'.format(progress_str, value[0]*1000, value[1]*1000, value[2]*1000, time.time() - start_b, eta, bool_str),
-					print '{} glue used: {:6.4} mg, in: {:6.4}s, ETA: {:6.4}s, {}\r'.format(progress_str, (value[1] - avg_mass)*1000, time.time() - start_b, eta, bool_str),
+					print '{} glue used: {:6.4} mg, in: {:6.4}s, ETA: {:6.4}s, {}\r'.format(progress_str, (value[1] - avg_mass + 0.)*1000., time.time() - start_b + 0., eta + 0., bool_str),
 					plot_th += dt_print
 				
 				data.append((time.time(), value))
@@ -579,8 +579,8 @@ def delay_and_flow_regulation(machiene, scale, pos, init_pressure, desired_flow,
 
 	machiene.gotoxy(position=pos)
 	machiene.down(7)
-	scale_height = machiene.probe_z(speed=25)[2]
-	needle_height = scale_height - 2
+	scale_height = machiene.probe_z(speed=50)[2]
+	needle_height = scale_height - 1
 	
 	n_samples = 30
 	relaxation_time = n_samples*scale.read_freq

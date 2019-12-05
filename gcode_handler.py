@@ -226,7 +226,7 @@ class gcode_handler():
 			if '"qr":32' in line:
 				command_done=1
 
-	def send_line(self, line, no_wait=False):
+	def send_line(self, line):
 		#if "$p1" in line: no_wait = True
 		if not "$" in line:
 			lines = line.split(";")
@@ -238,10 +238,10 @@ class gcode_handler():
 			#lines[1] = lines[1].split(";")
 			#send_str = '{"' + lines[0].replace("$", "").replace(" ", "").replace("\t", "") + '":' + lines[1][0].strip(" ") + '}'
 			lines=line.split(";")
-			send_str = lines[0].replace(" ", "").replace("\t", "")
+			send_str = lines[0].replace(" ", "").replace("\t", "") + "\n" 
 			self.serialport_pnp.write(unicode(send_str))
 			#print("send: ", unicode(send_str))
-			if not no_wait: self.send_line("G4 P0.2")
+			#if not no_wait: self.send_line("G4 P0.02")
 		if self.do_flush:
 			self.serialport_pnp.flush()
 			#response = self.serialport_pnp.readline()
@@ -255,7 +255,7 @@ class gcode_handler():
 	def flush_off(self):
 		self.do_flush = False
 
-	def send_bloc(self, bloc, no_wait=False, capture_response=True):
+	def send_bloc(self, bloc, capture_response=True):
 		#self.line_number+=(10-self.line_number%10) #round the line number 
 		#print("bloc received: ", bloc)
 		for l in bloc.splitlines():
@@ -263,7 +263,7 @@ class gcode_handler():
 				txt="N{0:05} {1}".format(self.line_number,l)
 			else:
 				txt=l
-			self.send_line(txt, no_wait)
+			self.send_line(txt)
 			line="x"
 			responded = True
 			if "$" in l: 
@@ -354,7 +354,7 @@ class gcode_handler():
 		self.tilt_map_og[1] = start_y
 		self.tilt_map_og[2] = start_z
 		
-	def measure_tilt_3p(self, point1, point2, point3, max_height=0, probe_speed=6):
+	def measure_tilt_3p(self, point1, point2, point3, max_height=0, probe_speed=25):
 		#point1 is taken as the origin 
 		if point1 == point2 or point1 == point3 or point2 == point3: raise ValueError("measure_tilt_3p requires 3 different points")
 		delta_x2 = point2[0] - point1[0]
@@ -375,16 +375,16 @@ class gcode_handler():
 		self.set_tilt()
 		self.gotoxy(position=point1)
 		self.down(max_height)
-		self.probe_z(speed=50, up_rel=2)
+		#self.probe_z(speed=50, up_rel=2)
 		p_1 = self.probe_z(speed=probe_speed)
 		self.gotoxy(position=point2)
 		self.down(max_height)
-		self.probe_z(speed=50, up_rel=2)
+		#self.probe_z(speed=50, up_rel=2)
 		p_2 = self.probe_z(speed=probe_speed)
 		self.gotoxy(position=point1)
 		self.gotoxy(position=point3)
 		self.down(max_height)
-		self.probe_z(speed=50, up_rel=2)
+		#self.probe_z(speed=50, up_rel=2)
 		p_3 = self.probe_z(speed=probe_speed)
 		
 		z_1 = p_1[2]
@@ -514,10 +514,10 @@ class gcode_handler():
 		self.send_bloc(gcode)
 		self.time_glueing+=(time.time()-t)
 	
-	def init_code(self):
-		#send initialisation sequence $st=0 $jv=3 $ee=1 $ej=0
-		print("initialize configuration and position")
-		code="""$ex=1
+	def reconfigure(self):
+		print("Loading proper configurations ...")
+		code1="""
+		$ex=1
 		$ej=0
 		$ec=0
 		$ee=1
@@ -537,15 +537,27 @@ class gcode_handler():
 		G61 ;e-xact path model
 		G21; select mm unit (just in case)
 		G40 ; cancel cutter radius compensation
+		"""
+		self.send_bloc(code1)
+		print("Done")
+		
+	
+	def init_code(self):
+		#send initialisation sequence $st=0 $jv=3 $ee=1 $ej=0
+		print("Preparing LitePlacer ...")
+		code1="""
+		$zsx=2; set limit switch on in case of messup in prev
+		"""
+		
+		code2="""
 		G28.2 Z0 ;
 		G28.2 Y0 ;
 		G28.2 X0 ;
-		G1 Z0 F1000 ;move Z to high position
 		"""
-		#G28.2 X0 Y0 Z0 A0 ;homing sequence
-		#G1 X300 Y250 F10000; move to paper page
-		self.send_bloc(code, no_wait=False)
-		print("initialized")
+		
+		self.send_bloc(code1)
+		self.send_bloc(code2)
+		print("Done")
 	
 	def home(self):
 		bloc = """
@@ -648,6 +660,68 @@ def probe(machiene, start_x, start_y, dir='y+', threshold_h=19, step=1, speed=50
 		#print("next")
 		return probe(machiene, final_x - d_pos[0], final_y - d_pos[1], dir=dir, threshold_h=threshold_h, step=(step + 0.0)/4., speed=max((speed + 0.0)/2., 25), up=prev_z - 0.75)
 	
+def probe2(machiene, start_x, start_y, dir='y+', threshold_h=19, step=1, speed=50, up=15, prb_h=0.75):
+	print('start probe 2')
+	if step < 0.025:
+		print("finished")
+		return
+	if dir[0] == 'y': 
+		pos_idx = 1
+		if dir[1] == '+':
+			d_pos = [0, step]
+		elif dir[1] == '-':
+			d_pos = [0, -step]
+		else: raise ValueError("Unknown probe direction '" + str(dir[1]) + "' should be '+' or '-'" )
+	elif dir[0] == 'x': 
+		pos_idx = 0
+		if dir[1] == '+':
+			d_pos = [step, 0]
+		elif dir[1] == '-':
+			d_pos = [-step, 0]
+		else: raise ValueError("Unknown probe direction '" + str(dir[1]) + "' should be '+' or '-'" )
+	else: raise ValueError("Unknown probe axis '" + str(dir[0]) + "' should be 'x' or 'y'")
+	#print(d_pos)
+	#machiene.up()
+	machiene.gotoxy(start_x, start_y, speed=speed)
+	machiene.down(up)
+	resolution = 0.26
+	
+	if step < resolution:
+		speed = 25
+	else: speed = 100
+	
+	#pos = machiene.probe_z(speed=25, up=up, max_z = threshold_h + 1)
+	#print(pos)
+	#start_z = pos[2]
+	#new_z = pos[2]
+	new_z = 0.
+	prev_z = 0.
+	#prev_z = pos[2]
+	it = 0
+	final_x = start_x
+	final_y = start_y
+	while new_z < threshold_h:
+		prev_z = new_z
+		final_x = start_x + it*d_pos[0]
+		final_y = start_y + it*d_pos[1]
+		machiene.gotoxy(final_x, final_y, speed=speed)
+		posy = machiene.probe_z(speed=100, up_rel=prb_h, max_z = threshold_h + 1)
+		#print(posy)
+		new_z = posy[2]
+		it += 1
+	machiene.down(prev_z - prb_h)
+	if final_x == start_x and final_y == start_y:
+		print("move back")
+		#machiene.down(prev_z - prb_h)
+		return probe2(machiene, final_x - d_pos[0], final_y - d_pos[1], dir=dir, threshold_h=threshold_h, step=step, up=up)
+	elif step < resolution:
+		print("edge found at " + str([final_x, final_y]))
+		return [final_x, final_y]
+	else:
+		#print("next")
+		return probe2(machiene, final_x - d_pos[0], final_y - d_pos[1], dir=dir, threshold_h=threshold_h, step=(step + 0.0)/4., up=prev_z - 0.75)
+	
+	
 def make_jig_coord(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1.15, probe_x='x-', probe_y='y+', prb_h=0.75, jig_file="prev_jig_coo.py", load_prev=False):
 	try:
 		old_f = open(jig_file, "r")
@@ -664,13 +738,13 @@ def make_jig_coord(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1.15, 
 	if not load_prev:
 		machiene.gotoxy(x_guess, y_guess)
 		machiene.down(up)
-		th_h = machiene.probe_z(speed=25)[2] + dth
-		[x1, y1] = probe(machiene, x_guess, y_guess, dir=probe_y, threshold_h=th_h, up=th_h - 0.5 - dth, prb_h=prb_h)
+		th_h = machiene.probe_z(speed=100, up_rel=0.75)[2] + dth
+		[x1, y1] = probe2(machiene, x_guess, y_guess, dir=probe_y, threshold_h=th_h, up=th_h - 0.5 - dth, prb_h=prb_h)
 		machiene.up()
 		machiene.gotoxy(x_guess + dx, y_guess)
 		machiene.down(up - 4)
-		th_h = machiene.probe_z(speed=25)[2] + dth
-		[x2, y2] = probe(machiene, x_guess + dx, y_guess, dir=probe_y, threshold_h=th_h, up=th_h - 0.5 - dth, step=4, speed=100, prb_h=prb_h)
+		th_h = machiene.probe_z(speed=100, up_rel=0.75)[2] + dth
+		[x2, y2] = probe2(machiene, x_guess + dx, y_guess, dir=probe_y, threshold_h=th_h, up=th_h - 0.5 - dth, step=4, speed=100, prb_h=prb_h)
 		machiene.up()
 		if probe_x[-1] == '+':
 			dxx = 15
@@ -680,8 +754,8 @@ def make_jig_coord(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1.15, 
 			x_geuss_2 = max(x_guess - dxx, -1)
 		machiene.gotoxy(x_geuss_2, y_guess + dy)
 		machiene.down(up - 6)
-		th_h = machiene.probe_z(speed=25)[2] + dth
-		[x3, y3] = probe(machiene, x_geuss_2, y_guess + dy, dir=probe_x, threshold_h=th_h, step=4, speed=100, up=th_h - 0.5 - dth, prb_h=prb_h)
+		th_h = machiene.probe_z(speed=100, up_rel=0.75)[2] + dth
+		[x3, y3] = probe2(machiene, x_geuss_2, y_guess + dy, dir=probe_x, threshold_h=th_h, step=4, speed=100, up=th_h - 0.5 - dth, prb_h=prb_h)
 		machiene.up()
 	
 		sin_th = (y2 - y1 + 0.)/(math.sqrt((x2 - x1 + 0.)**2 + (y2 - y1 + 0.)**2))
@@ -876,7 +950,7 @@ class drawing():
 			previous_point=endpoint
 		
 		if up_first:
-			machine.up(speed=1000)
+			machine.up(speed=2000)
 			machine.stop_pressure()
 		else:
 			machine.stop_pressure()
@@ -924,7 +998,8 @@ class drawing():
 	def clear_droplet(self, machine):
 		machine.gotoxy(position=self.clean_point[0:2])
 		machine.down(self.clean_point[2] -2, do_tilt=False)
-		machine.down(self.clean_point[2], do_tilt=False, speed=100)
+		machiene.probe_z(speed=100)
+		#machine.down(self.clean_point[2], do_tilt=False, speed=100)
 		machine.up()
 	
 	def draw(self, machine, boarders=False, lines=True, zigzag=True, dots=False, delay=1, up_first=True):
@@ -1104,7 +1179,8 @@ class drawing2():
 	def clear_droplet(self, machine):
 		machine.gotoxy(position=self.clean_point[0:2])
 		machine.down(self.clean_point[2] -2, do_tilt=False)
-		machine.down(self.clean_point[2], do_tilt=False, speed=100)
+		machine.probe_z(speed=100)
+		#machine.down(self.clean_point[2], do_tilt=False, speed=100)
 		machine.up()
 		
 	def layer_line_length(self, layer):

@@ -56,27 +56,39 @@ DRAWING_CFG = {
 		'file' : 'drawings/kapton_pigtail.dxf',
 		'layer': 'kapton',
 		'mass' : 12.,
-		'desired_flow':   0.803261218705,
+		'desired_flow':   0.8,
 		'flow_precision': 0.5,
 		'init_pressure': 1100,
 		'above': 0.3,
 		'is_encap': False,
 	},
-	'pigtail_top' : {
+	'water_kapton' : {
 		'file' : 'drawings/kapton_pigtail.dxf',
+		'layer': 'kapton',
+		'mass' : 120.,
+		'desired_flow':   20.,
+		'flow_precision': 5,
+		'init_pressure': 110,
+		'above': 0.3,
+		'is_encap': False,
+	},
+	'pigtail_top' : {
+		#'file' : 'drawings/kapton_pigtail.dxf',
+		'file' : 'drawings/kapton_pigtail_flip.dxf',
 		'layer': 'pigtail_top',
 		'mass' : 0.06,
-		'desired_flow': 0.2,
+		'desired_flow': 0.3,
 		'flow_precision': 0.2,
 		'init_pressure': 650,
 		'above': 0.3,
 		'is_encap': False,
 	},
 	'pigtail_bot' : {
-		'file' : 'drawings/kapton_pigtail.dxf',
+		#'file' : 'drawings/kapton_pigtail.dxf',
+		'file' : 'drawings/kapton_pigtail_flip.dxf',
 		'layer': 'pigtail_bot',
 		'mass' : 0.05,
-		'desired_flow': 0.2,
+		'desired_flow': 0.3,
 		'flow_precision': 0.2,
 		'init_pressure': 650,
 		'above': 0.3,
@@ -188,23 +200,23 @@ JIG_CFG = {
 	},
 	'kapton_B':{
 		'offsets' : {
-			'table_position' : [36, 110],
-			'coordinate_origin' : [2.25, -1], #[2.25, 3]
+			'table_position' : [26, 95],#[36, 110],
+			'coordinate_origin' : [37.5, 27],#[1.25, 0], #[2.25, 3]
 			'jig_hight': 15,
 		},
 		'probe': {
-			'probe_x':  'x+', 
-			'probe_y':  'y+',
-			'dx':       101, 
-			'dy':       105,  
+			'probe_x':  'x-', 
+			'probe_y':  'y-',
+			'dx':       100, 
+			'dy':       115,  
 			'dth':      1,  
 			'prb_h':    0.75,
 			'jig_file': 'cache/kapton_B_jig_coo.py'
 		},
 		'tilt': {
-			'p1': [0, -5],
-			'p2': [100, -10],
-			'p3': [-10, 85],
+			'p1': [20, 20],#[0, -5]
+			'p2': [130, 20],#[100, -10]
+			'p3': [20, 120],#[-10, 85]
 			'max_height': 6,
 		},
 		'flow': {

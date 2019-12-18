@@ -54,6 +54,7 @@ TABLE_HEIGHT = 35
 DRAWING_CFG = {
 	'kapton' : {
 		'file' : 'drawings/kapton_pigtail.dxf',
+		'bend_file': 'cache/NeedleBendVar_blue_metal.txt',
 		'layer': 'kapton',
 		'mass' : 12.,
 		'desired_flow':   0.8,
@@ -64,6 +65,7 @@ DRAWING_CFG = {
 	},
 	'water_kapton' : {
 		'file' : 'drawings/kapton_pigtail.dxf',
+		'bend_file': 'cache/NeedleBendVar_blue_metal.txt',
 		'layer': 'kapton',
 		'mass' : 120.,
 		'desired_flow':   20.,
@@ -75,8 +77,9 @@ DRAWING_CFG = {
 	'pigtail_top' : {
 		#'file' : 'drawings/kapton_pigtail.dxf',
 		'file' : 'drawings/kapton_pigtail_flip.dxf',
+		'bend_file': 'cache/NeedleBendVar_blue_metal.txt',
 		'layer': 'pigtail_top',
-		'mass' : 0.06,
+		'mass' : 0.1,
 		'desired_flow': 0.3,
 		'flow_precision': 0.2,
 		'init_pressure': 650,
@@ -85,9 +88,10 @@ DRAWING_CFG = {
 	},
 	'pigtail_bot' : {
 		#'file' : 'drawings/kapton_pigtail.dxf',
-		'file' : 'drawings/kapton_pigtail_flip.dxf',
+		'file' : 'drawings/kapton_pigtail_flip.dxf', #4.81 up
+		'bend_file': 'cache/NeedleBendVar_blue_metal.txt',
 		'layer': 'pigtail_bot',
-		'mass' : 0.05,
+		'mass' : 0.12,
 		'desired_flow': 0.3,
 		'flow_precision': 0.2,
 		'init_pressure': 650,
@@ -96,6 +100,7 @@ DRAWING_CFG = {
 	},
 	'pigtail_bot_encap' : {
 		'file' : 'drawings/kapton_pigtail.dxf',
+		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
 		'layer': 'pigtail_bot_encap',
 		'mass' : 1.5,
 		'desired_flow': 10.,
@@ -106,6 +111,7 @@ DRAWING_CFG = {
 	},
 	'hybrid_encap' : {
 		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
 		'layer': 'hybrid_encap',
 		'mass' : 240.,
 		'desired_flow': 1.7,
@@ -116,6 +122,7 @@ DRAWING_CFG = {
 	},
 	'hybrid_encap2' : {
 		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
 		'layer': 'hybrid_encap2',
 		'mass' : 240.,
 		'desired_flow': 1.7,
@@ -126,6 +133,7 @@ DRAWING_CFG = {
 	},
 	'hybrid_encap3' : {
 		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
 		'layer': 'hybrid_encap3',
 		'mass' : 50.,
 		'desired_flow':  1.27564142925,
@@ -136,6 +144,7 @@ DRAWING_CFG = {
 	},
 	'hybrid_encap4' : {
 		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
 		'layer': 'hybrid_encap4',
 		'mass' : 5.,
 		'desired_flow': 1.7,
@@ -146,6 +155,7 @@ DRAWING_CFG = {
 	},
 	'spiral_7l' : {
 		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
 		'layer': 'hybrid_encap5',
 		'mass' : 400.,
 		'desired_flow': 1.7,
@@ -156,12 +166,68 @@ DRAWING_CFG = {
 	},
 	'spiral_9' : {
 		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
 		'layer': 'hybrid_encap6',
 		'mass' : 400.,
 		'desired_flow': 1.7,
 		'flow_precision': 0.5,
 		'init_pressure': 800,
 		'above': 2.5,
+		'is_encap': True,
+	},
+	'ladder_0.7' : {
+		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
+		'layer': 'hybrid_encap7',
+		'mass' : 450.,
+		'desired_flow': 1.7,
+		'flow_precision': 0.5,
+		'init_pressure': 800,
+		'above': 1.5,
+		'is_encap': True,
+	},
+	'ladder_0.5' : {
+		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
+		'layer': 'hybrid_encap8',
+		'mass' : 400.,
+		'desired_flow': 1.7,
+		'flow_precision': 0.5,
+		'init_pressure': 800,
+		'above': 1.5,
+		'is_encap': True,
+	},
+	'ladder_0.6' : {
+		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
+		'layer': 'hybrid_encap9',
+		'mass' : 400.,
+		'desired_flow': 1.7,
+		'flow_precision': 0.5,
+		'init_pressure': 800,
+		'above': 1.5,
+		'is_encap': True,
+	},
+	'maze' : {
+		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
+		'layer': 'hybrid_encap_maze',
+		'mass' : 400.,
+		'desired_flow': 1.4,
+		'flow_precision': 0.3,
+		'init_pressure': 800,
+		'above': 1.1,
+		'is_encap': True,
+	},
+	'block' : {
+		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
+		'layer': 'hybrid_encap_block',
+		'mass' : 450.,
+		'desired_flow': 1.4,
+		'flow_precision': 0.3,
+		'init_pressure': 1600,
+		'above': 1.1,
 		'is_encap': True,
 	},
 }
@@ -201,7 +267,7 @@ JIG_CFG = {
 	'kapton_B':{
 		'offsets' : {
 			'table_position' : [26, 95],#[36, 110],
-			'coordinate_origin' : [37.5, 27],#[1.25, 0], #[2.25, 3]
+			'coordinate_origin' : [36.5, 28],#[1.25, 0], #[2.25, 3]
 			'jig_hight': 15,
 		},
 		'probe': {
@@ -225,7 +291,7 @@ JIG_CFG = {
 		'drawing': {
 			# 0.410 cloth thickness 0.32 sensor => 0.730 + 0.3 => 1.03
 			# 0.732 plexiglass => 1.142 => 1.442
-			'hight': 0.73,   #1.190,#1.090,           #0.912,#1.012, # 0.712 + 0.3
+			'hight': 0.78,   #1.190,#1.090,           #0.912,#1.012, # 0.712 + 0.3
 			'file' : 'kapton_pigtail2.dxf',
 		},
 	},
@@ -261,7 +327,7 @@ JIG_CFG = {
 	'hybrid':{
 		'offsets' : {
 			'table_position' : [10, 85],
-			'coordinate_origin' : [24, 25],
+			'coordinate_origin' : [21.5, 23.75],
 			'jig_hight': 3,
 		},
 		'probe': {

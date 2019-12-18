@@ -1,5 +1,5 @@
 from glueing_cfg import JIG_OFFSET_CFG, sum_offsets, JIG_CFG, DRAWING_CFG
-from gcode_handler import gcode_handler, drawing, make_jig_coord, make_quick_func, drawing2
+from gcode_handler import gcode_handler, drawing, make_jig_coord, make_quick_func, drawing2, calc_bend
 from scale_handler import scale_handler, delay_and_flow_regulation, read_glue_type, load_f_and_p, write_f_and_p
 import json
 import time 
@@ -12,6 +12,7 @@ parser = optparse.OptionParser(usage)
 parser.add_option('-j', '--jig',  dest='jig',  help='Jig that needs to be loaded (for example: kapton_A, kapton_B)', type='string')
 parser.add_option('-d', '--draw', dest='draw', help='Comma seperated of layer in dxf file that needs to be drawn (for example kapton or kapton,pigtail_bot)', type='string')
 parser.add_option('-g', '--glue', dest='glue', help='To give in new glue mix time', action='store_true', default=False)
+parser.add_option('-r', '--recon', dest='recon', help='Reconfigure LitePlacer', action='store_true', default=False)
 (options, args) = parser.parse_args()
 
 jig_key = options.jig
@@ -19,6 +20,8 @@ draw_layer = options.draw.split(',')
 
 if __name__ == '__main__':
 	machiene = gcode_handler()
+	if options.recon:
+		machiene.reconfigure()
 	machiene.init_code()
 	
 	# Table height
@@ -66,6 +69,8 @@ if __name__ == '__main__':
 	print("Making board coordinates took " + str(time.time() - start_coo) + "s")
 	
 	# Setup Board tilt
+	tilt_speed = 25
+	needle_bend = calc_bend(tilt_speed, DRAWING_CFG[draw_layer[0]]['bend_file'])
 	start_tilt = time.time()
 	old_f = open(jig_file, "r")
 	try:
@@ -85,7 +90,8 @@ if __name__ == '__main__':
 			shift_f(pos=JIG_CFG[jig_key]['tilt']['p1']), 
 			shift_f(pos=JIG_CFG[jig_key]['tilt']['p2']), 
 			shift_f(pos=JIG_CFG[jig_key]['tilt']['p3']), 
-			max_height=z_t-JIG_CFG[jig_key]['tilt']['max_height']
+			max_height=z_t-JIG_CFG[jig_key]['tilt']['max_height'],
+			probe_speed=tilt_speed
 			)
 		
 		old_data["tilt_map"] = machiene.tilt_map
@@ -196,7 +202,7 @@ if __name__ == '__main__':
 	
 	start_draw = time.time()
 	ref_point = machiene.tilt_map_og
-	ref_h = ref_point[2] - JIG_CFG[jig_key]['drawing']['hight'] #- 0.85 #jig h diff, kapton thickness, actual height above
+	ref_h = ref_point[2] - needle_bend - JIG_CFG[jig_key]['drawing']['hight'] #- 0.85 #jig h diff, kapton thickness, actual height above
 	kap_list = []
 	n_sen = 1
 	dx_sen = 0
@@ -208,15 +214,6 @@ if __name__ == '__main__':
 		print('offset: ', kap_offset) 
 		kap_dict = {}
 		for layer in draw_layer:
-		# kapton = drawing(
-					# JIG_CFG[jig_key]['drawing']['file'], 
-					# offset=kap_offset, 
-					# hight=ref_h, 
-					# line_speed=speed_mmPmin, 
-					# line_pressure=pressure, 
-					# coord_func=shift_f,
-					# clean_point=[x_s, y_s, z_s-1]
-					# )
 			safety_h = DRAWING_CFG[layer]['above']
 			kap_dict[layer] = drawing2(
 						DRAWING_CFG[layer]['file'], 
@@ -227,18 +224,7 @@ if __name__ == '__main__':
 						)
 		kap_list.append(kap_dict)
 		
-	# total_line_length_mm = 2*90. + 12.
-	# total_mass_mg = 1.25#18. #12.
-	# if measured_flow is None: measured_flow = 0.55 #desired_flow
-	# speed_mmPmin = total_line_length_mm/((total_mass_mg/measured_flow)/60.)
-	# #speed_mmPmin = 100
-	# print('Calculated speed was: ' + str(speed_mmPmin) + ' mm/min')
-					
 	
-	# Draw the kaptons
-	#machiene.gotoxy(ref_point[0], ref_point[1])
-	#machiene.probe_z()
-	#time.sleep(1)
 	for kap in kap_list:
 		for layer in draw_layer:
 			sen = kap[layer]
@@ -253,7 +239,13 @@ if __name__ == '__main__':
 			print('Calculated speed was: ' + str(speed_mmPmin) + ' mm/min')
 			#sen.clear_droplet(machiene)
 			delay = 0.2
-			if 'SY186' in glue_type: delay = 0.7
+			if 'SY186' in glue_type or DRAWING_CFG[layer]['is_encap']: delay = 1
+			print('delay: ', delay)
+			ask_r = True
+			up_f = True
+			if DRAWING_CFG[layer]['is_encap']: 
+				ask_r = False
+				up_f = False
 			#if DRAWING_CFG[layer]['is_encap']: delay = 0.5
 			print('Drawing '+layer+' with: '+ str(pressure_dict[layer])+ ' mbar, ' + str(flow_dict[layer])+ ' mg/s, ' + str(speed_mmPmin)+' mm/min')
 			sen.draw_robust(
@@ -262,8 +254,10 @@ if __name__ == '__main__':
 				speed_mmPmin, 
 				layer=DRAWING_CFG[layer]['layer'], 
 				delay=delay, 
-				up_first=True, 
+				up_first=up_f, 
+				ask_redo=ask_r,
 				)
+			
 			# sen.draw_layer(
 				# machiene,
 				# pressure_dict[layer],

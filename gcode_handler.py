@@ -546,17 +546,15 @@ class gcode_handler():
 		#send initialisation sequence $st=0 $jv=3 $ee=1 $ej=0
 		print("Preparing LitePlacer ...")
 		code1="""
+		$p1pof=0.0;
 		$zsx=2; set limit switch on in case of messup in prev
-		"""
-		
-		code2="""
 		G28.2 Z0 ;
 		G28.2 Y0 ;
 		G28.2 X0 ;
 		"""
 		
 		self.send_bloc(code1)
-		self.send_bloc(code2)
+		#self.send_bloc(code2)
 		print("Done")
 	
 	def home(self):
@@ -811,7 +809,25 @@ def make_quick_func( sin=0, cos=1, a=80, b=110):
 		y_m = b + (cos*y_temp + sin*x_temp)
 		return [x_m, y_m]
 	return board_coo	
-		
+
+
+def calc_bend(probe_speed, bend_file):
+	o_file = open(bend_file, 'r')
+	lines = o_file.readlines()
+	o_file.close()
+	
+	rico = None
+	bias = None
+	for line in lines:
+		if '#' in line: continue
+		line_content = line.replace('\n', '').replace('\t', '').replace(' ', '').split(':')
+		if 'rico' in line_content[0]: rico = float(line_content[1])
+		if 'bias' in line_content[0]: bias = float(line_content[1])
+	
+	if rico is None or bias is None: raise IOError('calc_bend: inproper bend file ' + bend_file + ', rico or bias not found')
+	return probe_speed*rico
+	
+	
 class drawing():
 	"""
 	Drawings stored in dxf files using boarders layer, glue_lines layer, glue_zigzag layer, glue_dots layer and glue_drops layer
@@ -1071,7 +1087,7 @@ class drawing2():
 			#	self.drawing["glue_drops"].append(e.dxf.center)
 			#print(e.dxftype(), e.dxf.layer)
 			
-	def draw_robust(self, machine, pressure, speed, layer, set_pen=False, delay=0.1, up_first=True):
+	def draw_robust(self, machine, pressure, speed, layer, set_pen=False, delay=0.1, up_first=True, ask_redo=True):
 		
 		lines = self.drawing[layer]['lines']
 		lsegmen_dict = {}
@@ -1093,11 +1109,14 @@ class drawing2():
 			while not satisfied:
 				self.clear_droplet(machine)
 				self.hight = start_h + attempt*0.1
-				self.draw_lines(machine, pressure, speed, dlines, set_pen=False, delay=0.1, up_first=True)
-				answer = raw_input('Was line drawn correltly? (y/n) ')
-				if answer == 'y':
+				self.draw_lines(machine, pressure, speed, dlines, set_pen=set_pen, delay=delay, up_first=up_first)
+				if not ask_redo:
 					satisfied = True
-					self.hight = start_h
+				else:
+					answer = raw_input('Was line drawn correltly? (y/n) ')
+					if answer == 'y':
+						satisfied = True
+						self.hight = start_h
 				attempt += 1
 			
 			
@@ -1147,7 +1166,7 @@ class drawing2():
 			if startpoint!=previous_point:
 				
 				if up_first:
-					machine.up(speed=1000)
+					machine.up(speed=2000)
 					machine.stop_pressure()
 				else:
 					machine.stop_pressure()
@@ -1155,6 +1174,7 @@ class drawing2():
 				
 				if self.clean_point is not None:
 					#Clear drop
+					print('clear droplet')
 					self.clear_droplet(machine)
 					# machine.gotoxy(position=self.clean_point[0:2])
 					# machine.down(self.clean_point[2] -2, do_tilt=False)
@@ -1170,7 +1190,7 @@ class drawing2():
 			previous_point=endpoint
 		
 		if up_first:
-			machine.up(speed=1000)
+			machine.up(speed=2000)
 			machine.stop_pressure()
 		else:
 			machine.stop_pressure()
@@ -1191,6 +1211,8 @@ class drawing2():
 			dx = line[1][0] - line[0][0]
 			dy = line[1][1] - line[0][1]
 			distance += math.sqrt(dx*dx + dy*dy)
+			
+		print('line distance', distance)
 		return distance
 			
 			
@@ -1218,3 +1240,5 @@ def offset_test(offset):
 	if offset[0] < MIN_OFFSET[0]: raise ValueError("DANGER: x offset to low, nozzle will collide with rack.")
 	if offset[1] < MIN_OFFSET[1]: print("WARNING: y offset lower then MIN_OFFSET[y], may draw out of range.")
 
+if __name__ == '__main__':
+	print(calc_bend(100, 'cache/NeedleBendVar_blue_metal.txt'))

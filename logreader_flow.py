@@ -12,7 +12,7 @@ from scale_handler import lin_reg
 LOG_DIR = 'log/'
 month_dict = dict((k,v) for v,k in enumerate(calendar.month_abbr))
 
-up_date = '2019_Dec_11'
+up_date = '2019_Dec_82'
 dn_date = '2019_Oct_23'
 
 #exclusion_list = []
@@ -118,6 +118,7 @@ for log in log_lst:
 			if 'GLUE TYPE' in line: glue_key = splt_line[-1]
 			elif 'GLUE TS' in line: ref_ts = float(splt_line[-1])
 			continue
+		if glue_key not in data: continue
 		if date not in data[glue_key]['time']:
 			data[glue_key]['time'][date] = []
 			data[glue_key]['flow'][date] = []

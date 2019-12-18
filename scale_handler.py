@@ -232,7 +232,7 @@ class scale_handler():
 				if time.time() - start > plot_th and display:
 					if value[3]: bool_str = "pressure is  ON"
 					else: bool_str = "pressure is OFF"
-					print '{:6.4} {:6.4} {:6.4} in {:5.3}s {}\r'.format(value[0], value[1], value[2], time.time() - start, bool_str),
+					print '{:6.4} {:6.4} {:6.4} in {:6.3}s {}\r'.format(value[0], value[1], value[2], time.time() - start, bool_str),
 					plot_th += dt_print
 				#if record and time.time() - prev_time > self.read_freq/2:
 				if record:
@@ -924,7 +924,7 @@ def flow_test(machiene, scale, pos, pressure_list, mass_lim=100, delay_t=0, empt
 	return flow_list, flow_list_up, flow_list_dn, delay_list
 		
 		
-def lin_reg(x, y, alpha=0.95):
+def lin_reg(x, y, w=None, alpha=0.95):
 	'''
 	y = a + b*x
 	'''
@@ -932,26 +932,34 @@ def lin_reg(x, y, alpha=0.95):
 	if len(x) < 3: 
 		print('lin_reg: lists must be at least length 3')
 		return 9999, 9999, [], [], True
-		
+	if w is None: W = [1]*len(x)
+	else: 
+		if len(w) != len(x): raise ValueError('lin_reg: weight lists must be of same length')
+		W = w
 	
 	n = len(x)
-	Sx = 0.
-	Sy = 0.
-	Sxx = 0.
-	Sxy = 0.
-	Syy = 0.
+	Sw = 0.
+	Swx = 0.
+	Swy = 0.
+	Swxx = 0.
+	Swxy = 0.
+	Swyy = 0.
 	for it in range(len(x)):
-		Sx += float(x[it])
-		Sy += float(y[it])
-		Sxx += float(x[it])*float(x[it])
-		Sxy += float(x[it])*float(y[it])
-		Syy += float(y[it])*float(y[it])
+		Sw += float(W[it])
+		Swx += float(W[it])*float(x[it])
+		Swy += float(W[it])*float(y[it])
+		Swxx += float(W[it])*float(x[it])*float(x[it])
+		Swxy += float(W[it])*float(x[it])*float(y[it])
+		Swyy += float(W[it])*float(y[it])*float(y[it])
 	
-	b = (n*Sxy - Sx*Sy + 0.)/(n*Sxx - Sx*Sx + 0.)
-	a = (1./(n + 0.))*Sy - b*(1./(n + 0.))*Sx
-	s_e_2 = (1./(n*(n-2) +0.))*(n*Syy - Sy*Sy - b*b*(n*Sxx - Sx*Sx))
-	s_b_2 = n*s_e_2/(n*Sxx + Sx*Sx)
-	s_a_2 = s_b_2*s_b_2*(1./(n + 0.))*Sxx
+	b = (Sw*Swxy - Swx*Swy + 0.)/(Sw*Swxx - Swx*Swx + 0.)
+	a = (Swxx*Swy - Swxy*Swx)/(Sw*Swxx - Swx*Swx + 0.)
+	#a = (1./(n + 0.))*Swy - b*(1./(n + 0.))*Swx
+	
+	# Probably incorrect for weighted 
+	s_e_2 = (1./(n*(n-2) +0.))*(Sw*Swyy - Swy*Swy - b*b*(Sw*Swxx - Swx*Swx))
+	s_b_2 = n*s_e_2/(Sw*Swxx + Swx*Swx)
+	s_a_2 = s_b_2*s_b_2*(1./(n + 0.))*Swxx
 	
 	s_b = math.sqrt(s_b_2)
 	s_a = math.sqrt(s_a_2)
@@ -962,6 +970,13 @@ def lin_reg(x, y, alpha=0.95):
 	#print('fit param: n=' +str(n) + ', a=' + str(a) + ', s_a=' +str(s_a) + ', b=' + str(b) + ', s_b=' + str(s_b) + 't_val=' + str(t_val))
 	
 	return a, b, a_int, b_int, False
+	
+# def lin_reg2(x, y, wx=None, wy=None, alpha=0.95):
+		# if wx is None: wx = [1]*len(x)
+		# if wy is None: wy = [1]*len(y)
+		# new_x = [x[i]*wx[i] for i in range(len(x))]
+		# new_y = [y[i]*wy[i] for i in range(len(y))]
+		
 	
 def read_glue_type(flow_file):
 	f_file = open(flow_file, 'r')

@@ -237,8 +237,8 @@ DRAWING_CFG = {
 JIG_CFG = {
 	'kapton_A':{
 		'offsets' : {
-			'table_position' : [26, 105],#[80, 110],
-			'coordinate_origin' : [35.25, 12.5],
+			'coordinate_origin' : [26, 105],#[80, 110],
+			'drawing_position' : [35.25, 12.5],
 			'jig_hight': 15,
 		},
 		'probe': {
@@ -266,8 +266,8 @@ JIG_CFG = {
 	},
 	'kapton_B':{
 		'offsets' : {
-			'table_position' : [26, 95],#[36, 110],
-			'coordinate_origin' : [36.5, 28],#[1.25, 0], #[2.25, 3]
+			'coordinate_origin' : [26, 95],#[36, 110],
+			'drawing_position' : [36.5, 28],#[1.25, 0], #[2.25, 3]
 			'jig_hight': 15,
 		},
 		'probe': {
@@ -297,8 +297,8 @@ JIG_CFG = {
 	},
 	'table':{
 		'offsets' : {
-			'table_position' : [10, 85],
-			'coordinate_origin' : [0, 0.1],
+			'coordinate_origin' : [10, 85],
+			'drawing_position' : [0, 0.1],
 			'jig_hight': 3,
 		},
 		'probe': {
@@ -326,8 +326,8 @@ JIG_CFG = {
 	},
 	'hybrid':{
 		'offsets' : {
-			'table_position' : [10, 85],
-			'coordinate_origin' : [21.5, 23.75],
+			'coordinate_origin' : [10, 85],
+			'drawing_position' : [21.5, 23.75],
 			'jig_hight': 3,
 		},
 		'probe': {
@@ -354,8 +354,8 @@ JIG_CFG = {
 	},
 	'table_hybrid':{
 		'offsets' : {
-			'table_position' : [10, 85],
-			'coordinate_origin' : [24, 25.5],#Dark green jig [24.5, 24.5],
+			'coordinate_origin' : [10, 85],
+			'drawing_position' : [24, 25.5],#Dark green jig [24.5, 24.5],
 			'jig_hight': 3,
 		},
 		'probe': {
@@ -380,6 +380,20 @@ JIG_CFG = {
 			'hight': 0., # 0.712 + 0.3
 			'file' : 'kapton_pigtail.dxf',
 		},
+	},
+}
+
+GRID_CFG = {
+	'2x2': {
+		1: [0, 0],
+		2: [0, 150],
+		3: [150, 150],
+		4: [150, 0],
+		'coo_file': 'cache/coordinates_2x2.py',
+	},
+	'1x1': {
+		1: [0, 0],
+		'coo_file': 'cache/coordinates_1x1.py',
 	},
 }
 

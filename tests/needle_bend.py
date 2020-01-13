@@ -13,8 +13,9 @@ from scale_handler import lin_reg
 
 #data_file = 'tests\\NeedleBend_blue_metal.txt'
 #data_file = 'tests\\NeedleBend_pink_metal.txt'
+data_file = 'tests\\NeedleBendLC2_blue_metal.txt'
 
-data_file = 'tests\\NeedleBend_pink_plastic.txt'
+#data_file = 'tests\\NeedleBend_pink_plastic.txt'
 
 def read_file(file_name, write_cache=False):
 	file_o = open(file_name, 'r')
@@ -76,6 +77,9 @@ def read_file(file_name, write_cache=False):
 	#ax.set_yscale('log')
 	pyplot.show()
 	
+	ms = ((-bias)/(60.*bend_f))*1000.
+	print('Equivalent to ' + str(ms) + ' ms of movement')
+	
 	if write_cache:
 		splt_name = file_name.split('_')
 		cache_file = 'cache\\NeedleBendVar_'+splt_name[-2]+'_'+splt_name[-1]
@@ -111,12 +115,12 @@ if __name__ == '__main__':
 	data_file_o.write("#\t TIME: " + datetime.datetime.now().strftime("%Y %b %d\t%H:%M:%S") + "\n") #%G %b %d  
 	data_file_o.close()
 	
-	prb_speeds = [175, 150, 125, 100, 50, 25, 12, 6]
+	prb_speeds = [200, 175, 150, 125, 100, 50, 25, 12, 6]
 	#prb_speeds = [125, 100]
 	probe_pos = [36, 110]
 	#prb_speeds = [175, 125, 12, 6]
 	machiene.gotoxy(probe_pos[0], probe_pos[1])
-	machiene.down(15)
+	machiene.down(10)
 	dwn = machiene.probe_z(speed=100)[2] - 1
 	for speed in prb_speeds:
 		

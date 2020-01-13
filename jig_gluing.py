@@ -17,6 +17,7 @@ parser.add_option('-r', '--recon', dest='recon', help='Reconfigure LitePlacer', 
 
 jig_key = options.jig
 draw_layer = options.draw.split(',')
+global_offset = [62.5, 42]
 
 if __name__ == '__main__':
 	machiene = gcode_handler()
@@ -30,7 +31,7 @@ if __name__ == '__main__':
 	
 	# Find kapton and kapton height
 	#kapton_og = [103, 92]
-	kapton_og = JIG_CFG[jig_key]['offsets']['table_position']
+	kapton_og = JIG_CFG[jig_key]['offsets']['coordinate_origin']
 	machiene.gotoxy(kapton_og[0], kapton_og[1])
 	machiene.down(z_s - JIG_CFG[jig_key]['offsets']['jig_hight'] -3)
 	[x_t, y_t, z_t] = machiene.probe_z(speed=100)
@@ -209,7 +210,7 @@ if __name__ == '__main__':
 	dy_sen = 0
 	jig_offset = [0, 0] #(in case extra offset is needed between obj and jig)
 	for ikap in range(n_sen):
-		table_offset = sum_offsets(JIG_CFG[jig_key]['offsets']['coordinate_origin'], jig_offset)
+		table_offset = sum_offsets(JIG_CFG[jig_key]['offsets']['drawing_position'], jig_offset)
 		kap_offset = sum_offsets(table_offset, [dx_sen*ikap, dy_sen*ikap])
 		print('offset: ', kap_offset) 
 		kap_dict = {}

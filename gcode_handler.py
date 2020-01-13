@@ -13,6 +13,11 @@ import os
 from threading import Thread
 import Queue
 from glueing_cfg import BOARDS_CFG, ST_CFG, MIN_OFFSET
+import copy
+
+GLOBAL_OFFSET = [62.5, 42]
+# Needle to 0,0 position
+
 #3231 phone yannick
 
 def no_filter(x=None, y=None, pos=None):
@@ -541,19 +546,21 @@ class gcode_handler():
 		self.send_bloc(code1)
 		print("Done")
 		
-	
+	def set_global_offset(self, x, y):
+		gcode = "G28.3 X{} Y{}".format(-x, -y)
+		#gcode = "G52 X{} Y{}".format(x, y)
+		self.send_bloc(gcode)
+		
 	def init_code(self):
 		#send initialisation sequence $st=0 $jv=3 $ee=1 $ej=0
 		print("Preparing LitePlacer ...")
 		code1="""
 		$p1pof=0.0;
 		$zsx=2; set limit switch on in case of messup in prev
-		G28.2 Z0 ;
-		G28.2 Y0 ;
-		G28.2 X0 ;
 		"""
 		
 		self.send_bloc(code1)
+		self.home()
 		#self.send_bloc(code2)
 		print("Done")
 	
@@ -564,6 +571,8 @@ class gcode_handler():
 		G28.2 X0 ;
 		"""
 		self.send_bloc(bloc)
+		self.set_global_offset(GLOBAL_OFFSET[0], GLOBAL_OFFSET[1])
+		self.gotoxy(0, 0)
 	
 	def closing_code(self):
 		code="""
@@ -659,7 +668,6 @@ def probe(machiene, start_x, start_y, dir='y+', threshold_h=19, step=1, speed=50
 		return probe(machiene, final_x - d_pos[0], final_y - d_pos[1], dir=dir, threshold_h=threshold_h, step=(step + 0.0)/4., speed=max((speed + 0.0)/2., 25), up=prev_z - 0.75)
 	
 def probe2(machiene, start_x, start_y, dir='y+', threshold_h=19, step=1, speed=50, up=15, prb_h=0.75):
-	print('start probe 2')
 	if step < 0.025:
 		print("finished")
 		return
@@ -709,7 +717,7 @@ def probe2(machiene, start_x, start_y, dir='y+', threshold_h=19, step=1, speed=5
 		it += 1
 	machiene.down(prev_z - prb_h)
 	if final_x == start_x and final_y == start_y:
-		print("move back")
+		#print("move back")
 		#machiene.down(prev_z - prb_h)
 		return probe2(machiene, final_x - d_pos[0], final_y - d_pos[1], dir=dir, threshold_h=threshold_h, step=step, up=up)
 	elif step < resolution:
@@ -719,6 +727,51 @@ def probe2(machiene, start_x, start_y, dir='y+', threshold_h=19, step=1, speed=5
 		#print("next")
 		return probe2(machiene, final_x - d_pos[0], final_y - d_pos[1], dir=dir, threshold_h=threshold_h, step=(step + 0.0)/4., up=prev_z - 0.75)
 	
+def measure_coord(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1.15, probe_x='x-', probe_y='y+', prb_h=0.75):
+	machiene.gotoxy(x_guess, y_guess)
+	machiene.down(up)
+	th_h = machiene.probe_z(speed=100, up_rel=0.75)[2] + dth
+	[x1, y1] = probe2(machiene, x_guess, y_guess, dir=probe_y, threshold_h=th_h, up=th_h - 0.5 - dth, prb_h=prb_h)
+	machiene.up()
+	machiene.gotoxy(x_guess + dx, y_guess)
+	machiene.down(up - 4)
+	th_h = machiene.probe_z(speed=100, up_rel=0.75)[2] + dth
+	[x2, y2] = probe2(machiene, x_guess + dx, y_guess, dir=probe_y, threshold_h=th_h, up=th_h - 0.5 - dth, step=4, speed=100, prb_h=prb_h)
+	machiene.up()
+	if probe_x[-1] == '+':
+		dxx = 15
+		x_geuss_2 = max(x_guess - dxx, -1)
+	else:
+		dxx = 0
+		x_geuss_2 = max(x_guess - dxx, -1)
+	machiene.gotoxy(x_geuss_2, y_guess + dy)
+	machiene.down(up - 6)
+	th_h = machiene.probe_z(speed=100, up_rel=0.75)[2] + dth
+	[x3, y3] = probe2(machiene, x_geuss_2, y_guess + dy, dir=probe_x, threshold_h=th_h, step=4, speed=100, up=th_h - 0.5 - dth, prb_h=prb_h)
+	machiene.up()
+	
+	sin_th = (y2 - y1 + 0.)/(math.sqrt((x2 - x1 + 0.)**2 + (y2 - y1 + 0.)**2))
+	cos_th = (x2 - x1 + 0.)/(math.sqrt((x2 - x1 + 0.)**2 + (y2 - y1 + 0.)**2))
+	
+	
+	print("sin = " + str(sin_th) + ",\t theta = " + str(math.asin(sin_th)) + " (" + str(math.asin(sin_th)*180/math.pi) + ")")
+	print("cos = " + str(cos_th) + ",\t theta = " + str(math.acos(cos_th)) + " (" + str(math.acos(cos_th)*180/math.pi) + ")")
+	
+	if x1 == x2:
+		raise ValueError("make_jig_coord: first point and second point can not have the same x value")
+	if y2 == y1:
+		print("Congratz, perfectly parallel")
+		b = y1
+		a = x3
+	else:
+		tan_th = (y2 - y1 + 0.)/(x2 - x1 + 0.)
+		a = ((x3 + 0.)/tan_th + y3 - y1 + tan_th*x1)/(tan_th + 1/tan_th)
+		b = tan_th*(a - x1) + y1
+	
+	print("a = " + str(a))
+	print("b = " + str(b))
+	
+	return a, b, sin_th, cos_th
 	
 def make_jig_coord(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1.15, probe_x='x-', probe_y='y+', prb_h=0.75, jig_file="prev_jig_coo.py", load_prev=False):
 	try:
@@ -734,48 +787,49 @@ def make_jig_coord(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1.15, 
 	
 	
 	if not load_prev:
-		machiene.gotoxy(x_guess, y_guess)
-		machiene.down(up)
-		th_h = machiene.probe_z(speed=100, up_rel=0.75)[2] + dth
-		[x1, y1] = probe2(machiene, x_guess, y_guess, dir=probe_y, threshold_h=th_h, up=th_h - 0.5 - dth, prb_h=prb_h)
-		machiene.up()
-		machiene.gotoxy(x_guess + dx, y_guess)
-		machiene.down(up - 4)
-		th_h = machiene.probe_z(speed=100, up_rel=0.75)[2] + dth
-		[x2, y2] = probe2(machiene, x_guess + dx, y_guess, dir=probe_y, threshold_h=th_h, up=th_h - 0.5 - dth, step=4, speed=100, prb_h=prb_h)
-		machiene.up()
-		if probe_x[-1] == '+':
-			dxx = 15
-			x_geuss_2 = max(x_guess - dxx, -1)
-		else:
-			dxx = 0
-			x_geuss_2 = max(x_guess - dxx, -1)
-		machiene.gotoxy(x_geuss_2, y_guess + dy)
-		machiene.down(up - 6)
-		th_h = machiene.probe_z(speed=100, up_rel=0.75)[2] + dth
-		[x3, y3] = probe2(machiene, x_geuss_2, y_guess + dy, dir=probe_x, threshold_h=th_h, step=4, speed=100, up=th_h - 0.5 - dth, prb_h=prb_h)
-		machiene.up()
+		# machiene.gotoxy(x_guess, y_guess)
+		# machiene.down(up)
+		# th_h = machiene.probe_z(speed=100, up_rel=0.75)[2] + dth
+		# [x1, y1] = probe2(machiene, x_guess, y_guess, dir=probe_y, threshold_h=th_h, up=th_h - 0.5 - dth, prb_h=prb_h)
+		# machiene.up()
+		# machiene.gotoxy(x_guess + dx, y_guess)
+		# machiene.down(up - 4)
+		# th_h = machiene.probe_z(speed=100, up_rel=0.75)[2] + dth
+		# [x2, y2] = probe2(machiene, x_guess + dx, y_guess, dir=probe_y, threshold_h=th_h, up=th_h - 0.5 - dth, step=4, speed=100, prb_h=prb_h)
+		# machiene.up()
+		# if probe_x[-1] == '+':
+			# dxx = 15
+			# x_geuss_2 = max(x_guess - dxx, -1)
+		# else:
+			# dxx = 0
+			# x_geuss_2 = max(x_guess - dxx, -1)
+		# machiene.gotoxy(x_geuss_2, y_guess + dy)
+		# machiene.down(up - 6)
+		# th_h = machiene.probe_z(speed=100, up_rel=0.75)[2] + dth
+		# [x3, y3] = probe2(machiene, x_geuss_2, y_guess + dy, dir=probe_x, threshold_h=th_h, step=4, speed=100, up=th_h - 0.5 - dth, prb_h=prb_h)
+		# machiene.up()
 	
-		sin_th = (y2 - y1 + 0.)/(math.sqrt((x2 - x1 + 0.)**2 + (y2 - y1 + 0.)**2))
-		cos_th = (x2 - x1 + 0.)/(math.sqrt((x2 - x1 + 0.)**2 + (y2 - y1 + 0.)**2))
+		# sin_th = (y2 - y1 + 0.)/(math.sqrt((x2 - x1 + 0.)**2 + (y2 - y1 + 0.)**2))
+		# cos_th = (x2 - x1 + 0.)/(math.sqrt((x2 - x1 + 0.)**2 + (y2 - y1 + 0.)**2))
 	
 	
-		print("sin = " + str(sin_th) + ",\t theta = " + str(math.asin(sin_th)) + " (" + str(math.asin(sin_th)*180/math.pi) + ")")
-		print("cos = " + str(cos_th) + ",\t theta = " + str(math.acos(cos_th)) + " (" + str(math.acos(cos_th)*180/math.pi) + ")")
+		# print("sin = " + str(sin_th) + ",\t theta = " + str(math.asin(sin_th)) + " (" + str(math.asin(sin_th)*180/math.pi) + ")")
+		# print("cos = " + str(cos_th) + ",\t theta = " + str(math.acos(cos_th)) + " (" + str(math.acos(cos_th)*180/math.pi) + ")")
 	
-		if x1 == x2:
-			raise ValueError("make_jig_coord: first point and second point can not have the same x value")
-		if y2 == y1:
-			print("Congratz, perfectly parallel")
-			b = y1
-			a = x3
-		else:
-			tan_th = (y2 - y1 + 0.)/(x2 - x1 + 0.)
-			a = ((x3 + 0.)/tan_th + y3 - y1 + tan_th*x1)/(tan_th + 1/tan_th)
-			b = tan_th*(a - x1) + y1
+		# if x1 == x2:
+			# raise ValueError("make_jig_coord: first point and second point can not have the same x value")
+		# if y2 == y1:
+			# print("Congratz, perfectly parallel")
+			# b = y1
+			# a = x3
+		# else:
+			# tan_th = (y2 - y1 + 0.)/(x2 - x1 + 0.)
+			# a = ((x3 + 0.)/tan_th + y3 - y1 + tan_th*x1)/(tan_th + 1/tan_th)
+			# b = tan_th*(a - x1) + y1
 	
-		print("a = " + str(a))
-		print("b = " + str(b))
+		# print("a = " + str(a))
+		# print("b = " + str(b))
+		a, b, sin_th, cos_th = measure_coord(machiene, x_guess, y_guess, up, dx, dy, dth, probe_x, probe_y, prb_h)
 	
 		board_coo = make_quick_func( sin=sin_th, cos=cos_th, a=a, b=b)
 		
@@ -790,11 +844,87 @@ def make_jig_coord(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1.15, 
 		
 		board_coo_f.write(json.dumps(data))
 		board_coo_f.close()
+		
+		print('Reset origin')
+		machiene.home()
+		
 		return board_coo
 	else:
 		if old_data is None: raise ValueError("No previous board data found ( " + jig_file+ " empty?)")
 		board_coo = make_quick_func( sin=old_data["sin"], cos=old_data["cos"], a=old_data["offset_x"], b=old_data["offset_y"])
 		return board_coo
+		
+def make_jig_coord_grid(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1.15, probe_x='x-', probe_y='y+', prb_h=0.75, grid_dict=None, grid_idx='all'):
+	
+	if grid_dict is None: raise ValueError('make_jig_coord_grid: grid_dict can not be None')
+	print(grid_dict)
+	
+	file_existed = True
+	grid_file_name = grid_dict['coo_file']
+	old_data = {}
+	all_keys = []
+	try:
+		grid_file = open(grid_file_name, 'r')
+		old_data = json.load(grid_file)
+		grid_file.close()
+	except:
+		file_existed = False
+		for key in grid_dict:
+			if isinstance(key, int):
+				old_data[key] = {}
+				old_data[key]['offset_x'] = None
+				old_data[key]['offset_y'] = None
+				old_data[key]['sin'] = None
+				old_data[key]['cos'] = None
+	for key in old_data:
+		all_keys.append(key)
+				
+	
+	if 'all' in grid_idx: to_do = all_keys
+	if not file_existed: to_do = all_keys
+	else: to_do = [grid_idx]
+	
+	print(all_keys)
+	print(to_do)
+	print(x_guess)
+	print(grid_dict)
+	
+	coo_f_dict = {}
+	new_data = copy.deepcopy(old_data)
+	data_adapted = False
+	for grid in all_keys:
+		if grid in to_do:
+			data_adapted = True
+			a, b, sin_th, cos_th = measure_coord(
+									machiene, 
+									x_guess + grid_dict[key][0], 
+									y_guess + grid_dict[key][1], 
+									up=up, 
+									dx=dx, 
+									dy=dy, 
+									dth=dth, 
+									probe_x=probe_x, 
+									probe_y=probe_y, 
+									prb_h=prb_h
+									)
+			new_data[key]['offset_x'] = a
+			new_data[key]['offset_y'] = b
+			new_data[key]['sin'] = sin_th
+			new_data[key]['cos'] = cos_th
+	
+		else: 
+			a = new_data[key]['offset_x']
+			b = new_data[key]['offset_y']
+			sin_th = new_data[key]['sin']
+			cos_th = new_data[key]['cos']
+			
+		coo_f_dict[key] = make_quick_func( sin=sin_th, cos=cos_th, a=a, b=b)
+	
+	if data_adapted:
+		grid_file = open(grid_file_name, 'w')
+		grid_file.write(json.dumps(new_data, indent=2))
+	
+	return coo_f_dict
 	
 def make_quick_func( sin=0, cos=1, a=80, b=110):
 	def board_coo(x=None, y=None, pos=None):

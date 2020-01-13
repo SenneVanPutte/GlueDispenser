@@ -4,6 +4,9 @@ Depends on:
 - ezdxf
 - pyserial
 
+GUI:
+- PyQt4: https://sourceforge.net/projects/pyqt/files/PyQt4/PyQt-4.11.4/
+
 DXF file convention:
 - dots must de draw as points in layer "points"
 - layer "border" contains the contour of the sensor (test purpose)

@@ -1,6 +1,7 @@
 import sys
 import ezdxf
-from PyQt4 import QtGui
+import json
+from PyQt4 import QtGui, QtCore
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as Canvas
 from glueing_cfg import DRAWING_CFG, JIG_CFG, GRID_CFG
@@ -11,6 +12,7 @@ DEFAUL_DRAWING = 'kapton'
 DEFAUL_JIG = 'kapton_B'
 DEFAUL_GRID = '1x1'
 DEFAUL_POS_CAL_IDX = 'all'
+DEFAUL_TILT_CAL_IDX = 'all'
 
 class GLUI(QtGui.QWidget):
 
@@ -19,8 +21,8 @@ class GLUI(QtGui.QWidget):
 		self.setGeometry(50, 50, 1000, 700)
 		self.setWindowTitle("GLUI")
 		
-		self.machine = gcode_handler()
-		self.machine.init_code()
+		self.machine = None
+		#self.machine.init_code()
 		#self.scale = scale_handler()
 		
 		self.grid = QtGui.QGridLayout()
@@ -70,11 +72,11 @@ class GLUI(QtGui.QWidget):
 		self.plot_ov()
 		
 		
-		# Calibrate position
+		# Calibrate position button and drop down
 		self.pos_cal_idx = DEFAUL_POS_CAL_IDX
 		self.pos_cal_idx_dd = QtGui.QComboBox()
 		self.load_dd_pos_cal() 
-		self.pos_cal_idx_dd.activated[str].connect(self.choose_pos_call_idx)
+		self.pos_cal_idx_dd.activated[str].connect(self.choose_pos_cal_idx)
 		self.grid.addWidget(self.pos_cal_idx_dd, 0, 3)
 		
 		position_cal_btn = QtGui.QPushButton('Calibrate')
@@ -83,11 +85,37 @@ class GLUI(QtGui.QWidget):
 		position_cal_lb = QtGui.QLabel('Calibrate position:')
 		self.grid.addWidget(position_cal_lb, 0, 2)
 		
+		# Calibrate tilt button and drop down
+		self.pos_func_dict = None
+		self.load_pos_func_dict()
+		self.tilt_cal_idx = DEFAUL_TILT_CAL_IDX
+		self.tilt_cal_idx_dd = QtGui.QComboBox()
+		self.load_dd_tilt_cal() 
+		self.tilt_cal_idx_dd.activated[str].connect(self.choose_tilt_cal_idx)
+		self.grid.addWidget(self.tilt_cal_idx_dd, 1, 3)
 		
+		#tilt_cal_btn = QtGui.QPushButton('Calibrate')
+		#tilt_cal_btn.clicked.connect(self.tilt_cal)
+		tilt_cal_lb = QtGui.QLabel('Calibrate tilt:')
+		self.grid.addWidget(tilt_cal_lb, 1, 2)
+		# TODO:
+		#x pos_func file for all jig types, now only for all grid
+		#x self.pos_func_dict load for all changes (look up file)
+		# check self.pos_func_dict to enable drop down elements or tilt button
+		
+		
+		
+		# Init machine button
+		machine_init_btn = QtGui.QPushButton('Init')
+		machine_init_btn.clicked.connect(self.init_machine)
+		self.grid.addWidget(machine_init_btn, 4, 4)
+		machine_init_lb = QtGui.QLabel('Init LitePlacer:')
+		self.grid.addWidget(machine_init_lb, 4, 2)
 		
 		
 		
 		self.show()
+		#self.machine.init_code()
 		
 	def choose_drawing(self, text):
 		self.current_drawing = str(text)
@@ -97,13 +125,31 @@ class GLUI(QtGui.QWidget):
 	def choose_jig(self, text):
 		self.current_jig = str(text)
 		self.plot_ov()
+		self.load_pos_func_dict()
+		self.load_dd_tilt_cal()
 		#print(self.current_jig)
 		
 	def choose_grid(self, text):
 		self.current_grid = str(text)
 		self.plot_ov()
 		self.load_dd_pos_cal()
+		self.load_pos_func_dict()
+		self.load_dd_tilt_cal()
 		#print(self.current_grid)
+		
+	def choose_pos_cal_idx(self, text):
+		if 'all' in str(text):
+			self.pos_cal_idx = str(text)
+		else:
+			self.pos_cal_idx = int(str(text))
+		print(self.pos_cal_idx)
+		
+	def choose_tilt_cal_idx(self, text):
+		if 'all' in str(text):
+			self.tilt_cal_idx = str(text)
+		else:
+			self.tilt_cal_idx = int(str(text))
+		print(self.tilt_cal_idx)
 		
 	def dxf_to_xy(self, dxf_file, layer):
 		dwg = ezdxf.readfile(dxf_file)
@@ -112,7 +158,8 @@ class GLUI(QtGui.QWidget):
 		x_points = []
 		y_points = []
 		for e in mod:
-			if not layer in e.dxf.layer: continue
+			#if not layer in e.dxf.layer: continue
+			if layer != e.dxf.layer: continue
 			#layer = e.dxf.layer
 			dxf_type = e.dxftype()
 			if dxf_type == 'LINE': 
@@ -158,6 +205,8 @@ class GLUI(QtGui.QWidget):
 		self.canvas_ov.draw()
 			
 	def pos_cal(self):
+	
+		file_name = 'cache/CooFile_'+self.current_jig+'_'+self.current_grid+'.py'
 		
 		coo_f_dict = make_jig_coord_grid(
 						self.machine, 
@@ -169,26 +218,88 @@ class GLUI(QtGui.QWidget):
 						dth=JIG_CFG[self.current_jig]['probe']['dth'], 
 						probe_x=JIG_CFG[self.current_jig]['probe']['probe_x'], 
 						probe_y=JIG_CFG[self.current_jig]['probe']['probe_y'], 
+						cache_file=file_name,
 						grid_dict=GRID_CFG[self.current_grid], 
 						grid_idx=self.pos_cal_idx,
 						)
-		print('hello')
+	
+	def tilt_cal(self):
+		file_name = 'cache/CooFile_'+self.current_jig+'_'+self.current_grid+'.py'
 		
+	
 	def load_dd_pos_cal(self):
 		self.pos_cal_idx_dd.clear()
-		self.pos_cal_idx_dd.addItem('all')
-		self.pos_cal_idx = DEFAUL_POS_CAL_IDX
-		self.pos_cal_idx_dd.setCurrentIndex(0)
+		
+		cb_items = ['all']
 		for idx in GRID_CFG[self.current_grid]:
 			if not isinstance(idx, int): continue
-			self.pos_cal_idx_dd.addItem(str(idx))
-	
-	def choose_pos_call_idx(self, text):
-		if 'all' in str(text):
-			self.pos_cal_idx = str(text)
-		else:
-			self.pos_cal_idx = int(str(text))
-		print(self.pos_cal_idx)
+			cb_items.append(str(idx))
+		cb_items.sort()
+		for idx in range(len(cb_items)):
+			self.pos_cal_idx_dd.addItem(cb_items[idx])
+		
+		self.pos_cal_idx = DEFAUL_POS_CAL_IDX
+		def_idx = cb_items.index(str(DEFAUL_POS_CAL_IDX))
+		self.pos_cal_idx_dd.setCurrentIndex(def_idx)
+			
+	def load_dd_tilt_cal(self):
+		self.tilt_cal_idx_dd.clear()
+		
+		cb_items = ['all']
+		for idx in GRID_CFG[self.current_grid]:
+			if not isinstance(idx, int): continue
+			cb_items.append(str(idx))
+		cb_items.sort()
+		include_all = True
+		for idx in range(len(cb_items)):
+			self.tilt_cal_idx_dd.addItem(cb_items[idx])
+			if not 'all' in cb_items[idx]:
+				if self.pos_func_dict[int(cb_items[idx])] is None:
+					include_all = False
+					j = self.tilt_cal_idx_dd.model().index(idx,0)
+					self.tilt_cal_idx_dd.model().setData(j, QtCore.QVariant(0), QtCore.Qt.UserRole-1)
+
+		if not include_all:
+			idx = cb_items.index('all')
+			j = self.tilt_cal_idx_dd.model().index(idx,0)
+			self.tilt_cal_idx_dd.model().setData(j, QtCore.QVariant(0), QtCore.Qt.UserRole-1)
+		
+		self.tilt_cal_idx = DEFAUL_TILT_CAL_IDX
+		def_idx = cb_items.index(str(DEFAUL_TILT_CAL_IDX))
+		self.tilt_cal_idx_dd.setCurrentIndex(def_idx)
+		
+	def load_pos_func_dict(self):
+		file_name = 'cache/CooFile_'+self.current_jig+'_'+self.current_grid+'.py'
+		
+		try:
+			func_file = open(file_name, 'r')
+			read_data = json.load(func_file)
+			func_file.close()
+		except:
+			read_data = {}
+		
+		func_dict = {}
+		for jig in GRID_CFG[self.current_grid]:
+			if not isinstance(jig, int): continue
+			if unicode(jig) in read_data:
+				func_dict[jig] = make_quick_func( 
+									sin=read_data[unicode(jig)]['sin'], 
+									cos=read_data[unicode(jig)]['cos'], 
+									a=read_data[unicode(jig)]['offset_x'], 
+									b=read_data[unicode(jig)]['offset_y']
+									)
+			else: func_dict[jig] = None
+		
+		self.pos_func_dict = func_dict
+		print('self.pos_func_dict', self.pos_func_dict) 
+		
+	def init_machine(self):
+		try:
+			self.machine = gcode_handler()
+		except:
+			print('Machine not made')
+			pass
+		self.machine.init_code()
 		
 		
 

@@ -83,7 +83,7 @@ DRAWING_CFG = {
 		'desired_flow': 0.3,
 		'flow_precision': 0.2,
 		'init_pressure': 650,
-		'above': 0.3,
+		'above': 0.15,
 		'is_encap': False,
 	},
 	'pigtail_bot' : {
@@ -95,7 +95,7 @@ DRAWING_CFG = {
 		'desired_flow': 0.3,
 		'flow_precision': 0.2,
 		'init_pressure': 650,
-		'above': 0.3,
+		'above': 0.15,
 		'is_encap': False,
 	},
 	'pigtail_bot_encap' : {
@@ -291,7 +291,7 @@ JIG_CFG = {
 		'drawing': {
 			# 0.410 cloth thickness 0.32 sensor => 0.730 + 0.3 => 1.03
 			# 0.732 plexiglass => 1.142 => 1.442
-			'hight': 0.8, #0.78,   #1.190,#1.090,           #0.912,#1.012, # 0.712 + 0.3
+			'hight': 0.5, #Glass + cloth + vacuum #0.8, #Plexi + cloth + vacuum, #0.78,   #1.190,#1.090,           #0.912,#1.012, # 0.712 + 0.3
 			'file' : 'kapton_pigtail2.dxf',
 		},
 	},

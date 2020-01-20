@@ -5,7 +5,7 @@ from glueing_cfg import JIG_OFFSET_CFG, sum_offsets, JIG_CFG
 from gcode_handler import gcode_handler, drawing, make_jig_coord, make_quick_func, drawing2
 from scale_handler import scale_handler, delay_and_flow_regulation
 
-data_file = 'probe_speed_hight_blueNeedle.txt' 
+data_file = 'glass_hight.txt' 
 def read_file(file_name):
 	file_o = open(file_name, 'r')
 	lines = file_o.readlines()
@@ -102,8 +102,8 @@ def read_file(file_name):
 if __name__ == '__main__':
 	machiene = gcode_handler()
 	machiene.init_code()
-	prb_speeds = [150, 125, 100, 50, 25, 12, 6]
-	#prb_speeds = [175, 125, 12, 6]
+	#prb_speeds = [150, 125, 100, 50, 25, 12, 6]
+	prb_speeds = [100]
 	for speed in prb_speeds:
 		
 		probe_speed = speed
@@ -117,7 +117,7 @@ if __name__ == '__main__':
 			print(z_s)
 			
 			machiene.up()
-			machiene.gotoxy(46, 130)
+			machiene.gotoxy(46, 125)
 			machiene.down(15)
 			[x_t, y_t, z_t] = machiene.probe_z(speed=probe_speed)
 			#print(z_t)

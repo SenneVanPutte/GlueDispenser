@@ -241,6 +241,7 @@ if __name__ == '__main__':
 			#sen.clear_droplet(machiene)
 			delay = 0.2
 			if 'SY186' in glue_type or DRAWING_CFG[layer]['is_encap']: delay = 1
+			if 'PT601' in glue_type and pressure_dict[layer] < 200: delay = 0.4
 			print('delay: ', delay)
 			ask_r = True
 			up_f = True

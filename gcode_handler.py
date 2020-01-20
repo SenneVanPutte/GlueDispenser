@@ -857,49 +857,45 @@ def make_jig_coord(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1.15, 
 def make_jig_coord_grid(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1.15, probe_x='x-', probe_y='y+', prb_h=0.75, cache_file=None, grid_dict=None, grid_idx='all'):
 	
 	if grid_dict is None: raise ValueError('make_jig_coord_grid: grid_dict can not be None')
-	#print(grid_dict)
 	
 	file_existed = True
 	grid_file_name = cache_file
 	old_data = {}
-	all_keys = []
 	try:
 		grid_file = open(grid_file_name, 'r')
 		old_data = json.load(grid_file)
 		grid_file.close()
 	except:
+		old_data = {}
 		file_existed = False
-		for key in grid_dict:
-			if isinstance(key, int):
-				old_data[key] = {}
-				old_data[key]['offset_x'] = None
-				old_data[key]['offset_y'] = None
-				old_data[key]['sin'] = None
-				old_data[key]['cos'] = None
-	for key in old_data:
-		int_key = int(key)
-		all_keys.append(int_key)
+	
+	new_data = copy.deepcopy(old_data)
+	all_keys = []
+	for key in grid_dict:
+		if not isinstance(key, int): continue
+		if not unicode(key) in new_data:
+			new_data[unicode(key)] = {}
+			new_data[unicode(key)]['offset_x'] = None
+			new_data[unicode(key)]['offset_y'] = None
+			new_data[unicode(key)]['sin'] = None
+			new_data[unicode(key)]['cos'] = None
+		all_keys.append(unicode(key))
 				
 	
 	if 'all' in str(grid_idx): to_do = all_keys
-	if not file_existed: to_do = all_keys
-	else: to_do = [grid_idx]
-	
-	print(all_keys)
-	print(to_do)
-	print(x_guess)
-	print(grid_dict)
+	#if not file_existed: to_do = all_keys
+	else: to_do = [unicode(grid_idx)]
 	
 	coo_f_dict = {}
-	new_data = copy.deepcopy(old_data)
+	#new_data = copy.deepcopy(old_data)
 	data_adapted = False
 	for grid in all_keys:
 		if grid in to_do:
 			data_adapted = True
 			a, b, sin_th, cos_th = measure_coord(
 									machiene, 
-									x_guess + grid_dict[grid][0], 
-									y_guess + grid_dict[grid][1], 
+									x_guess + grid_dict[int(grid)][0], 
+									y_guess + grid_dict[int(grid)][1], 
 									up=up, 
 									dx=dx, 
 									dy=dy, 
@@ -913,21 +909,21 @@ def make_jig_coord_grid(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1
 			new_data[grid]['sin'] = sin_th
 			new_data[grid]['cos'] = cos_th
 	
-		else: 
-			a = new_data[grid]['offset_x']
-			b = new_data[grid]['offset_y']
-			sin_th = new_data[grid]['sin']
-			cos_th = new_data[grid]['cos']
+		# else: 
+			# a = new_data[grid]['offset_x']
+			# b = new_data[grid]['offset_y']
+			# sin_th = new_data[grid]['sin']
+			# cos_th = new_data[grid]['cos']
 			
-		coo_f_dict[grid] = make_quick_func( sin=sin_th, cos=cos_th, a=a, b=b)
+		# coo_f_dict[grid] = make_quick_func( sin=sin_th, cos=cos_th, a=a, b=b)
 	
-	if data_adapted:
-		grid_file = open(grid_file_name, 'w')
-		grid_file.write(json.dumps(new_data, indent=2))
+	#if data_adapted:
+	grid_file = open(grid_file_name, 'w')
+	grid_file.write(json.dumps(new_data, indent=2))
 	
-	return coo_f_dict
+	return 0
 
-def make_jig_tilt_grid(machiene, p1, p2, p3, cache_file=None, grid_dict=None, grid_idx='all'):
+def make_jig_tilt_grid(machiene, p1, p2, p3, max_height, tilt_speed, coord_func_dict=None, cache_file=None, grid_dict=None, grid_idx='all'):
 	if grid_dict is None: raise ValueError('make_jig_tilt_grid: grid_dict can not be None')
 	#print(grid_dict)
 	
@@ -937,7 +933,9 @@ def make_jig_tilt_grid(machiene, p1, p2, p3, cache_file=None, grid_dict=None, gr
 	grid_file = open(cache_file, 'r')
 	old_data = json.load(grid_file)
 	grid_file.close()
+	new_data = copy.deepcopy(old_data)
 	
+	all_keys = []
 	for key in grid_dict:
 		if not isinstance(key, int): continue
 		if not unicode(key) in old_data: return key
@@ -947,77 +945,33 @@ def make_jig_tilt_grid(machiene, p1, p2, p3, cache_file=None, grid_dict=None, gr
 				tilt_map_found = True
 				break
 		if not tilt_map_found:
-			old_data[unicode(key)]['tilt_map'] = None
-			old_data[unicode(key)]['tilt_map_og'] = None
-	
-	
-	file_existed = True
-	grid_file_name = cache_file
-	old_data = {}
-	all_keys = []
-	try:
-		grid_file = open(grid_file_name, 'r')
-		old_data = json.load(grid_file)
-		grid_file.close()
-	except:
-		file_existed = False
-		for key in grid_dict:
-			if isinstance(key, int):
-				old_data[key] = {}
-				old_data[key]['offset_x'] = None
-				old_data[key]['offset_y'] = None
-				old_data[key]['sin'] = None
-				old_data[key]['cos'] = None
-	for key in old_data:
-		int_key = int(key)
-		all_keys.append(int_key)
-				
+			new_data[unicode(key)]['tilt_map'] = None
+			new_data[unicode(key)]['tilt_map_og'] = None
+		all_keys.append(unicode(key))
 	
 	if 'all' in str(grid_idx): to_do = all_keys
-	if not file_existed: to_do = all_keys
-	else: to_do = [grid_idx]
+	#if not file_existed: to_do = all_keys
+	else: to_do = [unicode(grid_idx)]
 	
-	print(all_keys)
-	print(to_do)
-	print(x_guess)
-	print(grid_dict)
 	
-	coo_f_dict = {}
-	new_data = copy.deepcopy(old_data)
-	data_adapted = False
-	for grid in all_keys:
-		if grid in to_do:
-			data_adapted = True
-			a, b, sin_th, cos_th = measure_coord(
-									machiene, 
-									x_guess + grid_dict[grid][0], 
-									y_guess + grid_dict[grid][1], 
-									up=up, 
-									dx=dx, 
-									dy=dy, 
-									dth=dth, 
-									probe_x=probe_x, 
-									probe_y=probe_y, 
-									prb_h=prb_h
-									)
-			new_data[grid]['offset_x'] = a
-			new_data[grid]['offset_y'] = b
-			new_data[grid]['sin'] = sin_th
-			new_data[grid]['cos'] = cos_th
+	for jig in to_do:
+		idx = int(jig)
+		machiene.measure_tilt_3p(
+			coord_func_dict[idx](pos=p1), 
+			coord_func_dict[idx](pos=p2), 
+			coord_func_dict[idx](pos=p3), 
+			max_height=max_height,
+			probe_speed=tilt_speed
+			)
+		
+		new_data[jig]["tilt_map"] = machiene.tilt_map
+		new_data[jig]["tilt_map_og"] = machiene.tilt_map_og
 	
-		else: 
-			a = new_data[grid]['offset_x']
-			b = new_data[grid]['offset_y']
-			sin_th = new_data[grid]['sin']
-			cos_th = new_data[grid]['cos']
-			
-		coo_f_dict[grid] = make_quick_func( sin=sin_th, cos=cos_th, a=a, b=b)
 	
-	if data_adapted:
-		grid_file = open(grid_file_name, 'w')
-		grid_file.write(json.dumps(new_data, indent=2))
+	grid_file = open(cache_file, 'w')
+	grid_file.write(json.dumps(new_data, indent=2))
 	
-	return coo_f_dict
+	return 0
 
 	
 def make_quick_func( sin=0, cos=1, a=80, b=110):

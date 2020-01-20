@@ -12,8 +12,16 @@ from scale_handler import lin_reg
 LOG_DIR = 'log/'
 month_dict = dict((k,v) for v,k in enumerate(calendar.month_abbr))
 
-up_date = '2019_Dec_82'
+up_date = '2020_Dec_82'
 dn_date = '2019_Oct_23'
+
+# Pink plastic needle
+#TS_FROM = 1579005640.29
+#TS_TO = 9579005640.29
+
+# ? needle
+TS_FROM = 1575555723.
+TS_TO = 1579005640.29
 
 #exclusion_list = []
 exclusion_list = ['2019_Nov_06', '2019_Nov_08']
@@ -133,6 +141,9 @@ for log in log_lst:
 		p = float(line_splt[2])
 		f = float(line_splt[4])
 		
+		if t < TS_FROM: continue
+		if t > TS_TO: continue
+		
 		if f < 0.: continue
 		if p > 5600: continue
 		
@@ -148,7 +159,8 @@ for log in log_lst:
 	
 # Plot
 #print(data['SY186'])
-for glue in data:
+#for glue in data:
+for glue in ['PT601']:
 	if 'WATER' in glue or 'AIR' in glue: continue 
 	print(glue)
 	#fonp_tot = []

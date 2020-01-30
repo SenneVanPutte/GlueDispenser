@@ -29,6 +29,7 @@ class scale_handler():
 		self.serial_p = ser
 		self.serialport_pnp = io.TextIOWrapper(io.BufferedRWPair(ser, ser, buffer_size=64*1024), newline='\n')
 		
+		# Log files
 		day_str = datetime.datetime.now().strftime("%Y_%b_%d")
 		self.glue_log = "log/glue_"+day_str+".log"
 		if not os.path.isfile(self.glue_log): open(self.glue_log, 'w+')
@@ -66,6 +67,8 @@ class scale_handler():
 			# ts = time.mktime(datetime.datetime(year, month, day, hour, min).timetuple())
 			# record_file.write("#\t GLUE TS: " + str(ts) + "\n")
 		record_file.close()
+		
+		self.measure_read_freq()
 		
 	def flow_log_new_glue(self, type, time_str):
 		ts = timestr_to_ts(time_str)
@@ -126,8 +129,39 @@ class scale_handler():
 		return
 				# break
 		
+	def cal_noq(self, option):
+		mass_exp = 1
+		if option == "g":  
+			mass_exp = 1
+		elif option == "h": 
+			mass_exp = 50
+		self.send_command(option)
+		time.sleep(2)
 		
-	
+		start = time.time()
+		time_out = 10
+		mass = self.read_mass_avg()
+		
+		while( abs(mass - mass_exp) > 0.01):
+			self.send_command(option)
+			time.sleep(0.2)
+			mass = self.read_mass()
+			if time.time() - start > time_out:	
+				print("Calibrating took longer then : " + str(time_out) + "s ")
+				break
+		
+		
+		self.clear_buffer()
+		return
+		
+	def measure_read_freq(self, duration=2):
+		data = self.read_out_time(duration, display=False, record=True, data=None)
+		n_data = len(data)
+		t_data = data[-1][0] - data[0][0]
+		freq = (t_data + 0.)/(n_data + 0.)
+		#print(n_data, t_data, freq)
+		self.read_freq = freq
+		
 	def calibrate(self, option="g", clear_time=None):
 		'''
 		g = 1g
@@ -248,7 +282,7 @@ class scale_handler():
 					#prev_time = time.time()
 			#if value[0] is not None: print '{:6.4} {:6.4} {:6.4} in {:4.3}s'.format(value[0], value[1], value[2], time.time() - start)
 			#time.sleep(1)
-		print '' 
+		if display: print '' 
 		self.write_record(data)
 		return data
 	
@@ -437,7 +471,7 @@ class scale_handler():
 		self.write_record(data)
 		return data, redo
 		
-	def read_out_flow_GUI(self, machiene, pressure, time_ba, mass_lim, progress_bar, n_data=2000, display=True, dt_print=0.5, time_out=30):
+	def read_out_flow_GUI(self, machiene, pressure, time_ba, mass_lim, progress_bar, eta_label=None, n_data=2000, display=True, dt_print=0.5, time_out=30):
 		"""
 		Read scale till 'mass_limit' in mg is accumulated on scale.
 		machiene = gcode_handler object
@@ -480,7 +514,7 @@ class scale_handler():
 				mass = value[0]
 				if not waiting_befor and measuring and value[3]: 
 					aq_data += 1
-					nd = min(aq_data, n_data)
+					n_d = min(aq_data, n_data)
 				if waiting_befor: 
 					mass_b.append(mass)
 					n_b += 1
@@ -530,6 +564,9 @@ class scale_handler():
 				waiting_after = False
 			satisfied = not (waiting_befor or measuring or waiting_after)
 			pb_prog = max(min(100.*((n_a + n_b + n_d + 0.)/(n_tot + 0.)), 100), 0.)
+			eta = max((n_tot - (n_a + n_b + n_d))*self.read_freq, 0.)
+			if eta_label is not None: eta_label.setText('ETA: {:5.1f} s'.format(eta))
+			#print('pb_prog', pb_prog, 'n_d', n_d, 'n_a', n_a)
 			progress_bar.setValue(pb_prog)
 		progress_bar.setValue(100.)
 		print '' 
@@ -656,6 +693,10 @@ def timestr_to_ts(time_str):
 	min = int(time_splt[1])
 	ts = time.mktime(datetime.datetime(year, month, day, hour, min).timetuple())
 	return ts
+	
+def ts_to_timestr(ts, option='%Y/%m/%d %H:%M'):
+	time_str = datetime.datetime.fromtimestamp(ts).strftime(option)
+	return time_str
  
 def record_pressure(machiene, scale, pressure, duration, wait_time):
 	data = []
@@ -732,7 +773,7 @@ def measure_flow(machiene, scale, pressure, wait_time, mass_lim, mass_threshold,
 	if redo and attempt >= max_retry: print('measure_flow failed after ' + str(max_retry)+ ' attempts wit pressure ' + str(pressure) + 'mbar, mass threshold ' + str(mass_threshold) + 'g and time out ' + str(time_out)+'s')
 	return data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn, redo
 
-def measure_flow_GUI(machiene, scale, pressure, wait_time, mass_lim, mass_threshold, axis, progress_bar, time_out=30, low_flow=False):
+def measure_flow_GUI(machiene, scale, pressure, wait_time, mass_lim, mass_threshold, axis, progress_bar, eta_label, time_out=30, low_flow=False):
 
 	mass_th = mass_threshold/1000.
 
@@ -744,7 +785,7 @@ def measure_flow_GUI(machiene, scale, pressure, wait_time, mass_lim, mass_thresh
 	y_sim_up = []
 	y_sim_dn = []
 	
-	data, redo = scale.read_out_flow_GUI(machiene, pressure, wait_time, mass_lim, progress_bar, display=True, dt_print=0.5, time_out=time_out)
+	data, redo = scale.read_out_flow_GUI(machiene, pressure, wait_time, mass_lim, progress_bar, eta_label, display=True, dt_print=0.5, time_out=time_out)
 	if not redo:
 		ret_dict = calc_delay_and_flow(data, mass_th, scale, wait_time, low_flow)
 		delay = ret_dict['delay']

@@ -16,12 +16,12 @@ up_date = '2020_Dec_82'
 dn_date = '2019_Oct_23'
 
 # Pink plastic needle
-#TS_FROM = 1579005640.29
-#TS_TO = 9579005640.29
+TS_FROM = 1579005640.29
+TS_TO = 9579005640.29
 
 # ? needle
-TS_FROM = 1575555723.
-TS_TO = 1579005640.29
+#TS_FROM = 1575555723.
+#TS_TO = 1579005640.29
 
 #exclusion_list = []
 exclusion_list = ['2019_Nov_06', '2019_Nov_08']

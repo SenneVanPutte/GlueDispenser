@@ -1,12 +1,13 @@
 import sys
 import ezdxf
 import json
+import copy
 from PyQt4 import QtGui, QtCore
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as Canvas
-from glueing_cfg import DRAWING_CFG, JIG_CFG, GRID_CFG
+from glueing_cfg import DRAWING_CFG, JIG_CFG, GRID_CFG, sum_offsets
 from gcode_handler import gcode_handler, drawing, make_jig_coord_grid, make_quick_func, drawing2, calc_bend, make_jig_tilt_grid
-from scale_handler import scale_handler, delay_and_flow_regulation, read_glue_type, load_f_and_p, write_f_and_p, measure_flow_GUI
+from scale_handler import scale_handler, delay_and_flow_regulation, read_glue_type, load_f_and_p, write_f_and_p, measure_flow_GUI, timestr_to_ts, ts_to_timestr
 
 TABLE_HIGHT = 42.
 GLUE_LIST = ['None', 'PT601', 'SY186','WATER']
@@ -26,8 +27,9 @@ DEFAULT_PRESSURE     = 0.
 
 class GLUI(QtGui.QWidget):
 
-	def __init__(self, parent=None):
+	def __init__(self, app, parent=None):
 		super(GLUI, self).__init__(parent)
+		self.app = app
 		self.setGeometry(50, 50, 1000, 700)
 		self.setWindowTitle("GLUI")
 		
@@ -44,42 +46,42 @@ class GLUI(QtGui.QWidget):
 		
 		# Drawing drop down
 		self.current_drawing = DEFAULT_DRAWING
-		draw_dd = QtGui.QComboBox()
+		self.draw_dd = QtGui.QComboBox()
 		for drawing in DRAWING_CFG:
-			draw_dd.addItem(drawing)
-		draw_dd.setCurrentIndex(DRAWING_CFG.keys().index(DEFAULT_DRAWING))
-		draw_dd.activated[str].connect(self.choose_drawing)
-		self.grid.addWidget(draw_dd, 4, 1)
-		draw_lb = QtGui.QLabel('Selected Drawing:')
-		self.grid.addWidget(draw_lb, 4, 0)
+			self.draw_dd.addItem(drawing)
+		self.draw_dd.setCurrentIndex(DRAWING_CFG.keys().index(DEFAULT_DRAWING))
+		self.draw_dd.activated[str].connect(self.choose_drawing)
+		self.grid.addWidget(self.draw_dd, 6, 1)
+		self.draw_lb = QtGui.QLabel('Selected Drawing:')
+		self.grid.addWidget(self.draw_lb, 6, 0)
 		
 		# Jig drop down
 		self.current_jig = DEFAULT_JIG
-		jig_dd = QtGui.QComboBox()
+		self.jig_dd = QtGui.QComboBox()
 		for jig in JIG_CFG:
-			jig_dd.addItem(jig)
-		jig_dd.setCurrentIndex(JIG_CFG.keys().index(DEFAULT_JIG))
-		jig_dd.activated[str].connect(self.choose_jig)
-		self.grid.addWidget(jig_dd, 5, 1)
-		jig_lb = QtGui.QLabel('Selected Jig:')
-		self.grid.addWidget(jig_lb, 5, 0)
+			self.jig_dd.addItem(jig)
+		self.jig_dd.setCurrentIndex(JIG_CFG.keys().index(DEFAULT_JIG))
+		self.jig_dd.activated[str].connect(self.choose_jig)
+		self.grid.addWidget(self.jig_dd, 7, 1)
+		self.jig_lb = QtGui.QLabel('Selected Jig:')
+		self.grid.addWidget(self.jig_lb, 7, 0)
 		
 		# Grid drop down
 		self.current_grid = DEFAULT_GRID
-		grid_dd = QtGui.QComboBox()
+		self.grid_dd = QtGui.QComboBox()
 		for grid in GRID_CFG:
-			grid_dd.addItem(grid)
-		grid_dd.setCurrentIndex(GRID_CFG.keys().index(DEFAULT_GRID))
-		grid_dd.activated[str].connect(self.choose_grid)
-		self.grid.addWidget(grid_dd, 6, 1)
-		grid_lb = QtGui.QLabel('Selected Grid:')
-		self.grid.addWidget(grid_lb, 6, 0)
+			self.grid_dd.addItem(grid)
+		self.grid_dd.setCurrentIndex(GRID_CFG.keys().index(DEFAULT_GRID))
+		self.grid_dd.activated[str].connect(self.choose_grid)
+		self.grid.addWidget(self.grid_dd, 8, 1)
+		self.grid_lb = QtGui.QLabel('Selected Grid:')
+		self.grid.addWidget(self.grid_lb, 8, 0)
 		
 		# Overview plot
 		self.figure_ov, self.figure_ov_ax = plt.subplots() 
 		#self.figure_ov = plt.figure(figsize=(10,5))
 		self.canvas_ov = Canvas(self.figure_ov)
-		self.grid.addWidget(self.canvas_ov, 0, 0, 4, 2)
+		self.grid.addWidget(self.canvas_ov, 0, 0, 6, 2)
 		self.plot_ov()
 		
 		
@@ -88,13 +90,13 @@ class GLUI(QtGui.QWidget):
 		self.pos_cal_idx_dd = QtGui.QComboBox()
 		self.load_dd_pos_cal() 
 		self.pos_cal_idx_dd.activated[str].connect(self.choose_pos_cal_idx)
-		self.grid.addWidget(self.pos_cal_idx_dd, 0, 3)
+		self.grid.addWidget(self.pos_cal_idx_dd, 1, 3)
 		
-		position_cal_btn = QtGui.QPushButton('Calibrate')
-		position_cal_btn.clicked.connect(self.pos_cal)
-		self.grid.addWidget(position_cal_btn, 0, 4)
-		position_cal_lb = QtGui.QLabel('Calibrate position:')
-		self.grid.addWidget(position_cal_lb, 0, 2)
+		self.position_cal_btn = QtGui.QPushButton('Calibrate')
+		self.position_cal_btn.clicked.connect(self.pos_cal)
+		self.grid.addWidget(self.position_cal_btn, 1, 4)
+		self.position_cal_lb = QtGui.QLabel('Calibrate position:')
+		self.grid.addWidget(self.position_cal_lb, 1, 2)
 		
 		# Calibrate tilt button and drop down
 		self.tilt_speed = 25
@@ -104,13 +106,14 @@ class GLUI(QtGui.QWidget):
 		self.tilt_cal_idx_dd = QtGui.QComboBox()
 		self.load_dd_tilt_cal() 
 		self.tilt_cal_idx_dd.activated[str].connect(self.choose_tilt_cal_idx)
-		self.grid.addWidget(self.tilt_cal_idx_dd, 1, 3)
+		self.grid.addWidget(self.tilt_cal_idx_dd, 2, 3)
+		self.load_tilt_dict()
 		
-		tilt_cal_btn = QtGui.QPushButton('Calibrate')
-		tilt_cal_btn.clicked.connect(self.tilt_cal)
-		self.grid.addWidget(tilt_cal_btn, 1, 4)
-		tilt_cal_lb = QtGui.QLabel('Calibrate tilt:')
-		self.grid.addWidget(tilt_cal_lb, 1, 2)
+		self.tilt_cal_btn = QtGui.QPushButton('Calibrate')
+		self.tilt_cal_btn.clicked.connect(self.tilt_cal)
+		self.grid.addWidget(self.tilt_cal_btn, 2, 4)
+		self.tilt_cal_lb = QtGui.QLabel('Calibrate tilt:')
+		self.grid.addWidget(self.tilt_cal_lb, 2, 2)
 		
 		# Glue selector
 		self.scale = None
@@ -118,7 +121,7 @@ class GLUI(QtGui.QWidget):
 		t_list = ['glue', 'time']
 		self.glue_sel_a = [DEFAULT_GLUE, DEFAULT_GLUE_CT]
 		self.current_glue = DEFAULT_GLUE
-		self.current_glue_ct = DEFAULT_GLUE_CT
+		self.current_glue_ts = DEFAULT_GLUE_CT
 		self.current_flow = DEFAULT_FLOW
 		self.current_pressure = DEFAULT_PRESSURE
 		
@@ -130,30 +133,46 @@ class GLUI(QtGui.QWidget):
 							exit_functions=['load_glue_sel']
 							)
 		
-		glue_set_btn = QtGui.QPushButton('Set Glue')
-		glue_set_btn.clicked.connect(self.set_glue)
-		self.grid.addWidget(glue_set_btn, 2, 2)
+		self.glue_set_btn = QtGui.QPushButton('Set Glue')
+		self.glue_set_btn.clicked.connect(self.set_glue)
+		self.grid.addWidget(self.glue_set_btn, 7, 4)
 		
-		self.glue_label = QtGui.QLabel('')
-		self.load_glue_sel()
-		self.grid.addWidget(self.glue_label, 2, 3, 1, 2)
+		self.glue_label = QtGui.QLabel()
+		self.glue_ts_label = QtGui.QLabel()
+		self.grid.addWidget(self.glue_label, 7, 2)
+		self.grid.addWidget(self.glue_ts_label, 7, 3)
 		
 		# Calibrate flow
-		flow_cal_btn = QtGui.QPushButton('Calibrate')
-		flow_cal_btn.clicked.connect(self.flow_cal)
-		self.grid.addWidget(flow_cal_btn, 3, 4)
-		position_cal_lb = QtGui.QLabel('Calibrate flow:')
-		self.grid.addWidget(position_cal_lb, 3, 2)
+		self.flow_cal_btn = QtGui.QPushButton('Calibrate')
+		self.flow_cal_btn.clicked.connect(self.flow_cal)
+		self.grid.addWidget(self.flow_cal_btn, 3, 4)
+		self.position_cal_lb = QtGui.QLabel('Calibrate flow:')
+		self.grid.addWidget(self.position_cal_lb, 3, 2)
+		
+		# Current flow and pressure labels
+		self.current_pressure_lb = QtGui.QLabel()
+		self.grid.addWidget(self.current_pressure_lb, 6, 2)
+		self.current_flow_lb = QtGui.QLabel()
+		self.grid.addWidget(self.current_flow_lb, 6, 3)
+		self.load_last_glue()
+		self.load_fandp_labels()
 		
 		
 		
 		
 		# Init machine button
-		machine_init_btn = QtGui.QPushButton('Init')
-		machine_init_btn.clicked.connect(self.init_machine)
-		self.grid.addWidget(machine_init_btn, 7, 4)
-		machine_init_lb = QtGui.QLabel('Init LitePlacer:')
-		self.grid.addWidget(machine_init_lb, 7, 2)
+		self.machine_init_btn = QtGui.QPushButton('Init')
+		self.machine_init_btn.clicked.connect(self.init_machine)
+		self.grid.addWidget(self.machine_init_btn, 8, 4)
+		self.machine_init_lb = QtGui.QLabel('Init LitePlacer:')
+		self.grid.addWidget(self.machine_init_lb, 8, 2)
+		
+		# Draw button and label
+		self.dodraw_btn = QtGui.QPushButton('Draw')
+		self.dodraw_btn.clicked.connect(self.draw)
+		self.grid.addWidget(self.dodraw_btn, 4, 4)
+		self.dodraw_lb = QtGui.QLabel('Draw configuration:')
+		self.grid.addWidget(self.dodraw_lb, 4, 2)
 		
 		
 		
@@ -170,6 +189,7 @@ class GLUI(QtGui.QWidget):
 		self.plot_ov()
 		self.load_pos_func_dict()
 		self.load_dd_tilt_cal()
+		self.load_tilt_dict()
 		#print(self.current_jig)
 		
 	def choose_grid(self, text):
@@ -178,6 +198,7 @@ class GLUI(QtGui.QWidget):
 		self.load_dd_pos_cal()
 		self.load_pos_func_dict()
 		self.load_dd_tilt_cal()
+		self.load_tilt_dict()
 		#print(self.current_grid)
 		
 	def choose_pos_cal_idx(self, text):
@@ -249,7 +270,7 @@ class GLUI(QtGui.QWidget):
 		self.canvas_ov.draw()
 			
 	def pos_cal(self):
-	
+		self.disable_all()
 		file_name = 'cache/CooFile_'+self.current_jig+'_'+self.current_grid+'.py'
 		
 		ret_code = make_jig_coord_grid(
@@ -266,23 +287,48 @@ class GLUI(QtGui.QWidget):
 						grid_dict=GRID_CFG[self.current_grid], 
 						grid_idx=self.pos_cal_idx,
 						)
+		
+		self.load_pos_func_dict()
+		self.load_dd_tilt_cal()
+		self.enable_all()
 	
 	def tilt_cal(self):
+		self.disable_all()
 		file_name = 'cache/CooFile_'+self.current_jig+'_'+self.current_grid+'.py'
 		max_hight = TABLE_HIGHT - JIG_CFG[self.current_jig]['offsets']['jig_hight'] - JIG_CFG[self.current_jig]['tilt']['max_height']
 		
-		ret_code = make_jig_tilt_grid(
-					self.machine, 
-					JIG_CFG[self.current_jig]['tilt']['p1'], 
-					JIG_CFG[self.current_jig]['tilt']['p2'],  
-					JIG_CFG[self.current_jig]['tilt']['p3'],  
-					max_hight, 
-					self.tilt_speed, 
-					coord_func_dict=self.pos_func_dict, 
-					cache_file=file_name, 
-					grid_dict=GRID_CFG[self.current_grid], 
-					grid_idx=self.tilt_cal_idx
-					)
+		if 'all' in self.tilt_cal_idx:
+			to_do = []
+			for jig in GRID_CFG[self.current_grid]:
+			    if isinstance(jig, int): to_do.append(jig)
+			to_do.sort()	
+		else:
+			to_do = [self.tilt_cal_idx]
+		
+		for jig in to_do:
+			if self.pos_func_dict[jig] is None:
+				QtGui.QMessageBox.information(
+						self, 
+						'Position not found', 
+						'Calibrate the position of jig '+str(jig)+'\n Jig '+str(jig) + ' will be skipped.',
+						QtGui.QMessageBox.Ok
+						)
+				continue
+			ret_code = make_jig_tilt_grid(
+						self.machine, 
+						JIG_CFG[self.current_jig]['tilt']['p1'], 
+						JIG_CFG[self.current_jig]['tilt']['p2'],  
+						JIG_CFG[self.current_jig]['tilt']['p3'],  
+						max_hight, 
+						self.tilt_speed, 
+						coord_func_dict=self.pos_func_dict, 
+						cache_file=file_name, 
+						grid_dict=GRID_CFG[self.current_grid], 
+						grid_idx=jig
+						)
+		
+		self.load_tilt_dict()
+		self.enable_all()
 			
 	def load_dd_pos_cal(self):
 		self.pos_cal_idx_dd.clear()
@@ -349,30 +395,123 @@ class GLUI(QtGui.QWidget):
 		
 		self.pos_func_dict = func_dict
 		
+	def load_tilt_dict(self):
+		file_name = 'cache/CooFile_'+self.current_jig+'_'+self.current_grid+'.py'
+		
+		try:
+			func_file = open(file_name, 'r')
+			read_data = json.load(func_file)
+			func_file.close()
+		except:
+			read_data = {}
+		
+		tilt_dict = {}
+		for jig in GRID_CFG[self.current_grid]:
+			if not isinstance(jig, int): continue
+			if unicode(jig) in read_data and not read_data[unicode(jig)]['sin'] is None:
+				tilt_dict[jig] = {}
+				tilt_dict[jig]['tilt_map'] = read_data[unicode(jig)]['tilt_map']
+				tilt_dict[jig]['tilt_map_og'] = read_data[unicode(jig)]['tilt_map_og']
+			else: tilt_dict[jig] = None
+		
+		self.tilt_dict = tilt_dict
+		print(self.tilt_dict)
+		
+	def load_fandp_labels(self):
+		try:
+			self.current_flow_lb.setText('Flow: {:5.2f} mg/s'.format(self.current_flow))
+		except:
+			self.current_flow_lb.setText('Flow:  none mg/s')
+		
+		try:
+			self.current_pressure_lb.setText('Pressure: {:4.0f} mbar'.format(self.current_pressure))
+		except:
+			self.current_pressure_lb.setText('Pressure: none mbar')
+			
+		try:
+			self.glue_label.setText('Glue: '+ self.current_glue)
+		except:
+			self.glue_label.setText('Glue: '+ self.current_glue)
+		
+		try:
+			self.glue_ts_label.setText('From: ' + ts_to_timestr(self.current_glue_ts, option='%d %b %H:%M'))
+		except:
+			self.glue_ts_label.setText('From: ' + ts_to_timestr(self.current_glue_ts, option='%b %d %H:%M'))
+			self.glue_ts_label.setText('From:       none' )
+						
 	def init_machine(self):
+		print('ini ini')
+		print(self.machine_init_btn.isEnabled())
+		self.disable_all()
 		try:
 			self.machine = gcode_handler()
 		except:
 			print('Machine not made')
 			pass
 		self.machine.init_code()
+		self.enable_all()
 	
 	def set_glue(self):
+		self.disable_all()
 		self.glue_window.show()
 		
 	def load_glue_sel(self):
 		self.current_glue = self.glue_sel_a[0]
 		if isinstance(self.glue_sel_a[1], str):
-			split_time = self.glue_sel_a[1].split(':')
-			tot_time = int(split_time[0])*60 + int(split_time[1])
-			self.current_glue_ct = tot_time
-		else: self.current_glue_ct = None
+			self.current_glue_ts = timestr_to_ts(self.glue_sel_a[1])
+		else: self.current_glue_ts = None
 		
-		self.glue_label.setText('Current glue: ' + self.glue_sel_a[0])
+		#self.glue_label.setText('Current glue: ' + self.glue_sel_a[0])
 		self.new_glue_to_log()
+		self.load_fandp_labels()
 		print(self.glue_sel_a)
-		print(self.current_glue, self.current_glue_ct)
+		print(self.current_glue, self.current_glue_ts)
+		
+	def load_last_glue(self):
+		file_name = 'cache/FlowFile.py'
+		
+		try:
+			func_file = open(file_name, 'r')
+			read_data = json.load(func_file)
+			func_file.close()
+		except:
+			read_data = {}
+		
+		self.current_flow     = DEFAULT_FLOW
+		self.current_pressure = DEFAULT_PRESSURE
+		self.current_glue     = DEFAULT_GLUE
+		self.current_glue_ts  = DEFAULT_GLUE_CT
+		for key in read_data:
+			if 'last_glue' in key: 
+				
+				self.current_flow     = read_data[key]['flow']
+				self.current_pressure = read_data[key]['pressure']
+				self.current_glue     = read_data[key]['type']
+				self.current_glue_ts  = read_data[key]['ts']
+		
+		self.load_fandp_labels()
 	
+	def write_last_glue(self):
+		file_name = 'cache/FlowFile.py'
+		
+		try:
+			func_file = open(file_name, 'r')
+			read_data = json.load(func_file)
+			func_file.close()
+		except:
+			read_data = {}
+		
+		new_data = copy.deepcopy(read_data)
+		new_data['last_glue'] = {}
+		new_data['last_glue']['flow']     = self.current_flow
+		new_data['last_glue']['pressure'] = self.current_pressure
+		new_data['last_glue']['type']     = self.current_glue
+		new_data['last_glue']['ts']       = self.current_glue_ts
+		
+		ff_file = open(file_name, 'w')
+		ff_file.write(json.dumps(new_data, indent=2))
+		ff_file.close()
+			
 	def new_glue_to_log(self):
 		if self.scale is None: 
 			print('new_glue_to_log called but self.scale is None')
@@ -391,17 +530,21 @@ class GLUI(QtGui.QWidget):
 		except:
 			read_data = {}
 		
+		self.current_flow = None
+		self.current_pressure = None
 		for key in read_data:
-			if self.current_glue in key: return read_data[key]['flow'], read_data[key]['pressure']
-				
-		return DEFAULT_FLOW, DEFAULT_PRESSURE
+			if self.current_glue in key: 
+				self.current_flow = read_data[key]['flow']
+				self.current_pressure = read_data[key]['pressure']
+		
+		self.load_fandp_labels()
 			
 	def write_flow_and_pres(self):
 		file_name = 'cache/FlowFile.py'
 		
 		try:
 			ff_file = open(file_name, 'r')
-			read_data = json.load(func_file)
+			read_data = json.load(ff_file)
 			ff_file.close()
 		except:
 			read_data = {}
@@ -419,32 +562,98 @@ class GLUI(QtGui.QWidget):
 			self.scale = scale_handler(False)
 			self.new_glue_to_log()
 		
+		self.disable_all()
 		self.flow_window.show()
 		
-		# pressure, delay, measured_flow = delay_and_flow_regulation(
-												# machiene, 
-												# scale, 
-												# scale_pos,  
-												# init_pressure, 
-												# DRAWING_CFG[layer]['desired_flow'], 
-												# precision=DRAWING_CFG[layer]['flow_precision'], 
-												# mass_limit=mass_lim, 
-												# threshold=20, 
-												# show_data=True, 
-												# init=True
-												# )
-		#init_pressure => load previous, if None take initial guess drawing, else recalculate on desired flow
-		#mass_limit glue dependent
-		
-		#show data: 
-		# - after each iteration show new window with fit
-		# - two buttons: good or bad fit
-		#  - if bad: popup to ask if redo is needed
-		#  - if good: re-iterate if needed
-		
+	def draw(self):
+		self.disable_all()
+		self.machine.home()
+		for jig in GRID_CFG[self.current_grid]:
+			if not isinstance(jig, int): continue
+			if self.pos_func_dict[jig] is None:
+				QtGui.QMessageBox.information(
+						self, 
+						'Position not found', 
+						'Calibrate the position of jig '+str(jig)+'\n Jig '+str(jig) + ' will be skipped.',
+						QtGui.QMessageBox.Ok
+						)
+				continue
+			if self.tilt_dict[jig]['tilt_map'] is None:
+				QtGui.QMessageBox.information(
+						self, 
+						'Tilt not found', 
+						'Calibrate the tilt of jig '+str(jig)+'\n Jig '+str(jig) + ' will be skipped.',
+						QtGui.QMessageBox.Ok
+						)
+				continue
+			
+			self.machine.tilt_map = self.tilt_dict[jig]['tilt_map']
+			self.machine.tilt_map_og = self.tilt_dict[jig]['tilt_map_og']
+			
+			# TODO: needle_bend
+			object_h = self.machine.tilt_map_og[2] - JIG_CFG[self.current_jig]['drawing']['hight'] #- needle_bend
+			image_h = object_h - DRAWING_CFG[self.current_drawing]['above']
+			imoge_o = sum_offsets(GRID_CFG[self.current_grid][jig], JIG_CFG[self.current_jig]['offsets']['drawing_position'])
+			
+			image = drawing2(
+						DRAWING_CFG[self.current_drawing]['file'], 
+						offset=imoge_o, 
+						hight=image_h, 
+						coord_func=self.pos_func_dict[jig], 
+						clean_point=[0, 0, TABLE_HIGHT-1]
+						)
+			
+			image_l = image.layer_line_length(DRAWING_CFG[self.current_drawing]['layer'])
+			image_m = DRAWING_CFG[self.current_drawing]['mass']
+			draw_speed = (image_l+0.)/(((image_m+0.)/(self.current_flow+0))/60.) # in mm/min
+			
+			delay = 0.2
+			if 'SY186' in self.current_glue or DRAWING_CFG[self.current_drawing]['is_encap']: delay = 1
+			if 'PT601' in self.current_glue and self.current_pressure < 200: delay = 0.3
+			ask_r = False
+			up_f = True
+			
+			image.draw_robust(
+				self.machine,
+				self.current_pressure,
+				draw_speed, 
+				layer=DRAWING_CFG[self.current_drawing]['layer'], 
+				delay=delay, 
+				up_first=up_f, 
+				ask_redo=ask_r,
+				)
+		self.machine.up()
+		self.machine.gotoxy(SCALE_POSITION[0], SCALE_POSITION[1])
+		self.enable_all()
 	
-	#def draw
-	#set tilt_map and tilt_map_og for every jig!!!
+	def toggle_all(self, bool):
+		self.jig_dd.setEnabled(bool)
+		self.grid_dd.setEnabled(bool)
+		self.draw_dd.setEnabled(bool)
+		
+		self.pos_cal_idx_dd.setEnabled(bool)
+		self.position_cal_btn.setEnabled(bool)
+		
+		self.tilt_cal_idx_dd.setEnabled(bool)
+		self.tilt_cal_btn.setEnabled(bool)
+		
+		self.flow_cal_btn.setEnabled(bool)
+		self.dodraw_btn.setEnabled(bool)
+		
+		self.glue_set_btn.setEnabled(bool)
+		self.machine_init_btn.setEnabled(bool)
+		self.update()
+	
+	def enable_all(self):
+		self.toggle_all(True)
+		
+	def disable_all(self):
+		self.toggle_all(False)
+
+	def update(self):
+		self.repaint()
+		self.app.processEvents()
+	
 
 class q_box(QtGui.QWidget):
 
@@ -538,6 +747,8 @@ class q_box(QtGui.QWidget):
 		for func_str in self.exit_functions:
 			func = getattr(self.main_window, func_str)
 			func()
+		self.main_window.load_flow_and_pres()
+		self.main_window.enable_all()
 		self.close()
 			
 class fit_window(QtGui.QWidget):
@@ -550,8 +761,8 @@ class fit_window(QtGui.QWidget):
 		self.main_window = main_window
 		self.desired_flow = DRAWING_CFG[main_window.current_drawing]['desired_flow']
 		self.flow_precision = DRAWING_CFG[main_window.current_drawing]['flow_precision']
-		if guess_pressure:
-			self.set_pressure(main_window.current_pressure)
+		if guess_pressure and not main_window.current_pressure is None:
+			self.set_pressure = main_window.current_pressure
 			self.guess_pressure(main_window.current_flow)
 		else:
 			self.set_pressure = DRAWING_CFG[main_window.current_drawing]['init_pressure']
@@ -560,40 +771,81 @@ class fit_window(QtGui.QWidget):
 		self.grid = QtGui.QGridLayout()
 		self.setLayout(self.grid)
 		
+		# Fit plot
 		self.figure, self.figure_ax = plt.subplots() 
 		#self.figure_ov = plt.figure(figsize=(10,5))
 		self.canvas = Canvas(self.figure)
 		self.grid.addWidget(self.canvas, 0, 0, 1, 3)
 		#self.canvas.draw()
 		
+		# Progress and eta
 		self.progress_bar = QtGui.QProgressBar()
-		self.grid.addWidget(self.progress_bar, 1, 0, 1, 3)
+		self.progress_bar.setAlignment(QtCore.Qt.AlignRight)
+		self.grid.addWidget(self.progress_bar, 2, 1, 1, 2)
+		self.eta_lb = QtGui.QLabel('ETA:  none s')
+		self.grid.addWidget(self.eta_lb, 2, 0)
+		
+		# Info labels
+		self.measured_flow = 0.
+		self.pressure_lb = QtGui.QLabel()
+		self.grid.addWidget(self.pressure_lb, 1, 0)
+		
+		self.flow_lb = QtGui.QLabel()
+		self.grid.addWidget(self.flow_lb, 1, 1)
+		
+		self.desired_flow_lb = QtGui.QLabel()
+		self.grid.addWidget(self.desired_flow_lb, 1, 2)
+		self.update_labels()
+		
 		
 		# Start button 
 		self.start_btn = QtGui.QPushButton('Start')
 		self.start_btn.clicked.connect(self.start)
 		self.start_btn.setEnabled(True)
-		self.grid.addWidget(self.start_btn, 2, 0)
+		self.grid.addWidget(self.start_btn, 3, 0)
 		
 		# Good fit/ Bad fit buttons
 		self.good_btn = QtGui.QPushButton('Good')
 		self.good_btn.clicked.connect(self.good)
 		self.good_btn.setEnabled(False)
-		self.grid.addWidget(self.good_btn, 2, 1)
+		self.grid.addWidget(self.good_btn, 3, 1)
 		self.bad_btn = QtGui.QPushButton('Bad')
 		self.bad_btn.clicked.connect(self.bad)
 		self.bad_btn.setEnabled(False)
-		self.grid.addWidget(self.bad_btn, 2, 2)
-		
-		
+		self.grid.addWidget(self.bad_btn, 3, 2)
+	
+	def calibrate_scale(self):
+		self.main_window.scale.zero()
+		QtGui.QMessageBox.information(
+						self, 
+						'Calibration mass', 
+						'Put 1 g calibration mass on the scale.',
+						QtGui.QMessageBox.Ok
+						)
+		self.main_window.scale.cal_noq('g')
+		QtGui.QMessageBox.information(
+						self, 
+						'Calibration mass', 
+						'Remove calibration mass from the scale.',
+						QtGui.QMessageBox.Ok
+						)
+				
+	def update_labels(self):
+		self.pressure_lb.setText('Set pressure: {:4.0f} mbar'.format(self.set_pressure))
+		self.flow_lb.setText('Measured flow: {:5.2f} mg/s'.format(self.measured_flow))
+		self.desired_flow_lb.setText('Desired flow: {:5.2f} mg/s'.format(self.desired_flow))
+	
 	def move_to_scale(self):
 		self.main_window.machine.gotoxy(position=SCALE_POSITION)
 		self.main_window.machine.down(7)
 		scale_height = self.main_window.machine.probe_z(speed=50)[2]
 		needle_height = scale_height - 1
-		
+		self.main_window.machine.down(needle_height)
+			
 	def start(self):
 		self.start_btn.setEnabled(False)
+		self.update()
+		self.calibrate_scale()
 		self.move_to_scale()
 		self.flow_iteration()	
 		
@@ -602,13 +854,13 @@ class fit_window(QtGui.QWidget):
 		mass_lim = 150
 		if self.main_window.current_glue == 'SY186': mass_lim = 250
 		if self.main_window.current_glue == 'WATER': mass_lim = 500
-		time_out = max((mass_limit + 50 + 0.)/((self.desired_flow + 0.)/2.), 100)
+		time_out = max((mass_lim + 50 + 0.)/((self.desired_flow + 0.)/2.), 100)
 		
 		#plt.cla()
 		self.figure_ax.clear()
 		
 		flow = measure_flow_GUI(
-				elf.main_window.machine, 
+				self.main_window.machine, 
 				self.main_window.scale, 
 				self.set_pressure, 
 				3, # second to wait before and after
@@ -616,21 +868,28 @@ class fit_window(QtGui.QWidget):
 				20, 
 				self.figure_ax, 
 				self.progress_bar, 
-				time_out=30
+				self.eta_lb,
+				time_out=time_out
 				)
 		self.measured_flow = flow
+		self.update_labels()
 		
 		self.canvas.draw()
 		self.good_btn.setEnabled(True)
 		self.bad_btn.setEnabled(True)
+		self.update()
 	
 	def good(self):
 		self.good_btn.setEnabled(False)
 		self.bad_btn.setEnabled(False)
+		self.update()
 		
 		if abs(self.measured_flow - self.desired_flow) < self.flow_precision:
 			self.main_window.current_flow = self.measured_flow
 			self.main_window.current_pressure = self.set_pressure
+			self.main_window.load_fandp_labels()
+			self.main_window.write_last_glue()
+			self.main_window.write_flow_and_pres()
 			self.close_window()
 		else:
 			self.guess_pressure(self.measured_flow)
@@ -639,7 +898,10 @@ class fit_window(QtGui.QWidget):
 	def bad(self):
 		self.good_btn.setEnabled(False)
 		self.bad_btn.setEnabled(False)
-		choise = QtGui.QMessageBox(
+		self.update()
+		
+		parent = QtGui.QMainWindow()
+		choise = QtGui.QMessageBox.question(
 						self, 
 						'Redo Fit?', 
 						'Do you want to redo the flow calibration with the current settings?',
@@ -658,9 +920,12 @@ class fit_window(QtGui.QWidget):
 	
 	def close_window(self):
 		self.main_window.machine.up()
+		self.main_window.enable_all()
 		self.close()
 			
-			
+	def update(self):
+		self.repaint()
+		QtGui.QApplication.processEvents()
 		
 		
 		
@@ -684,6 +949,6 @@ class fit_window(QtGui.QWidget):
 
 if __name__ == "__main__":
 	app = QtGui.QApplication(sys.argv)
-	GUI = GLUI()
+	GUI = GLUI(app)
 	sys.exit(app.exec_())
 	

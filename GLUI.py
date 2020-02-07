@@ -33,10 +33,12 @@ class GLUI(QtGui.QWidget):
 		self.app = app
 		self.setGeometry(50, 50, 1000, 400)
 		self.setWindowTitle("GLUI")
+		self.setWindowIcon(QtGui.QIcon('images/GLUI_logo.png'))
 		
 		self.thread_pool = QtCore.QThreadPool()
 		
-		self.machine = gcode_handler()
+		#self.machine = gcode_handler()
+		self.machine = None
 		#self.machine.init_code()
 		#self.scale = scale_handler()
 		
@@ -104,6 +106,9 @@ class GLUI(QtGui.QWidget):
 		self.position_cal_btn.clicked.connect(
 										lambda: self.launch_worker(
 											self.pos_cal, 
+											check_func = [
+												self.init_warning
+												],
 											closing_func=[
 												self.load_dd_tilt_cal
 												]
@@ -126,7 +131,15 @@ class GLUI(QtGui.QWidget):
 		
 		self.tilt_cal_btn = QtGui.QPushButton('Calibrate')
 		#self.tilt_cal_btn.clicked.connect(self.tilt_cal)
-		self.tilt_cal_btn.clicked.connect(lambda: self.launch_worker(self.tilt_cal))
+		self.tilt_cal_btn.clicked.connect(
+									lambda: self.launch_worker(
+										self.tilt_cal,
+										check_func = [
+											self.init_warning,
+											self.coo_dict_warning,
+											],
+										)
+									)
 		self.grid.addWidget(self.tilt_cal_btn, 2, 4)
 		self.tilt_cal_lb = QtGui.QLabel('Calibrate tilt:')
 		self.grid.addWidget(self.tilt_cal_lb, 2, 2)
@@ -175,7 +188,12 @@ class GLUI(QtGui.QWidget):
 		
 		# Init machine button
 		self.machine_init_btn = QtGui.QPushButton('Init')
-		self.machine_init_btn.clicked.connect(lambda: self.launch_worker(self.init_machine))
+		self.machine_init_btn.clicked.connect(
+			lambda: self.launch_worker(
+				self.init_machine,
+				starting_func = [self.load_machine]
+				)
+			)
 		self.grid.addWidget(self.machine_init_btn, 8, 4)
 		self.machine_init_lb = QtGui.QLabel('Init LitePlacer:')
 		self.grid.addWidget(self.machine_init_lb, 8, 2)
@@ -183,7 +201,16 @@ class GLUI(QtGui.QWidget):
 		# Draw button and label
 		self.dodraw_btn = QtGui.QPushButton('Draw')
 		#self.dodraw_btn.clicked.connect(self.draw)
-		self.dodraw_btn.clicked.connect(lambda: self.launch_worker(self.draw))
+		self.dodraw_btn.clicked.connect(
+			lambda: self.launch_worker(
+				self.draw,
+				check_func = [
+					self.init_warning,
+					self.coo_dict_warning,
+					self.tilt_dict_warning,
+					],
+				)
+			)
 		self.grid.addWidget(self.dodraw_btn, 4, 4)
 		self.dodraw_lb = QtGui.QLabel('Draw configuration:')
 		self.grid.addWidget(self.dodraw_lb, 4, 2)
@@ -284,11 +311,6 @@ class GLUI(QtGui.QWidget):
 		self.canvas_ov.draw()
 			
 	def pos_cal(self):
-		#self.disable_all()
-		if self.machine is None:
-			self.init_warning()
-			#self.enable_all()
-			return
 		file_name = 'cache/CooFile_'+self.current_jig+'_'+self.current_grid+'.py'
 		
 		ret_code = make_jig_coord_grid(
@@ -307,15 +329,8 @@ class GLUI(QtGui.QWidget):
 						)
 		
 		self.load_pos_func_dict()
-		#self.load_dd_tilt_cal()
-		#self.enable_all()
 	
 	def tilt_cal(self):
-		#self.disable_all()
-		if self.machine is None:
-			self.init_warning()
-			#self.enable_all()
-			return
 		file_name = 'cache/CooFile_'+self.current_jig+'_'+self.current_grid+'.py'
 		max_hight = TABLE_HIGHT - JIG_CFG[self.current_jig]['offsets']['jig_hight'] - JIG_CFG[self.current_jig]['tilt']['max_height']
 		
@@ -328,14 +343,7 @@ class GLUI(QtGui.QWidget):
 			to_do = [self.tilt_cal_idx]
 		
 		for jig in to_do:
-			if self.pos_func_dict[jig] is None:
-				QtGui.QMessageBox.information(
-						self, 
-						'Position not found', 
-						'Calibrate the position of jig '+str(jig)+'\n Jig '+str(jig) + ' will be skipped.',
-						QtGui.QMessageBox.Ok
-						)
-				continue
+			if self.pos_func_dict[jig] is None: continue
 			ret_code = make_jig_tilt_grid(
 						self.machine, 
 						JIG_CFG[self.current_jig]['tilt']['p1'], 
@@ -350,7 +358,6 @@ class GLUI(QtGui.QWidget):
 						)
 		
 		self.load_tilt_dict()
-		#self.enable_all()
 
 	def load_dd_draw(self):
 		self.draw_dd.clear()
@@ -480,14 +487,14 @@ class GLUI(QtGui.QWidget):
 			self.glue_ts_label.setText('From:       none' )
 						
 	def init_machine(self):
+		self.machine.init_code()
+	
+	def load_machine(self):
 		try:
 			self.machine = gcode_handler()
 		except:
-		
 			print('Machine not made')
-			#self.machine = gcode_handler()
 			pass
-		self.machine.init_code()
 	
 	def set_glue(self):
 		self.disable_all()
@@ -608,30 +615,11 @@ class GLUI(QtGui.QWidget):
 		self.flow_window.show()
 		
 	def draw(self):
-		#self.disable_all()
-		if self.machine is None:
-			self.init_warning()
-			#self.enable_all()
-			return
 		self.machine.home()
 		for jig in GRID_CFG[self.current_grid]:
 			if not isinstance(jig, int): continue
-			if self.pos_func_dict[jig] is None:
-				QtGui.QMessageBox.information(
-						self, 
-						'Position not found', 
-						'Calibrate the position of jig '+str(jig)+'\n Jig '+str(jig) + ' will be skipped.',
-						QtGui.QMessageBox.Ok
-						)
-				continue
-			if self.tilt_dict[jig]['tilt_map'] is None:
-				QtGui.QMessageBox.information(
-						self, 
-						'Tilt not found', 
-						'Calibrate the tilt of jig '+str(jig)+'\n Jig '+str(jig) + ' will be skipped.',
-						QtGui.QMessageBox.Ok
-						)
-				continue
+			if self.pos_func_dict[jig] is None: continue
+			if self.tilt_dict[jig]['tilt_map'] is None: continue
 			
 			self.machine.tilt_map = self.tilt_dict[jig]['tilt_map']
 			self.machine.tilt_map_og = self.tilt_dict[jig]['tilt_map_og']
@@ -670,7 +658,6 @@ class GLUI(QtGui.QWidget):
 				)
 		self.machine.up()
 		self.machine.gotoxy(SCALE_POSITION[0], SCALE_POSITION[1])
-		#self.enable_all()
 	
 	def toggle_all(self, bool):
 		self.jig_dd.setEnabled(bool)
@@ -748,19 +735,92 @@ class GLUI(QtGui.QWidget):
 		ff_file.close()
 
 	def init_warning(self):
-		QtGui.QMessageBox.information(
+		if self.machine is None:
+			QtGui.QMessageBox.information(
 						self, 
 						'LitePlacer not found', 
 						'Initiate the LitePlacer before you can do this operation.',
 						QtGui.QMessageBox.Ok
 						)
+			return False
+		else: return True
+		
+	def coo_dict_warning(self):
+		missing_jig = []
+		present_jig = []
+		for jig in self.pos_func_dict:
+			if self.pos_func_dict[jig] is None:
+				missing_jig.append(str(jig))
+			else: present_jig.append(str(jig))
+		
+		if len(missing_jig) == len(self.pos_func_dict):
+			QtGui.QMessageBox.information(
+					self, 
+					'Position not found', 
+					'Missing position calibration of all jigs\n Operation canceled.',
+					QtGui.QMessageBox.Ok
+					)
+			return False
+		elif len(missing_jig) > 0:
+			missing_str = ', '.join(missing_jig)
+			present_str = ', '.join(present_jig)
+			QtGui.QMessageBox.information(
+					self, 
+					'Position not found', 
+					'Missing position calibration of jig\'s ['+missing_str+']\n Jig\'s ['+missing_str+ '] will be skipped.\n Proceeding with jig\'s ['+present_str+'].',
+					QtGui.QMessageBox.Ok
+					)
+			return True
+		else: return True
+	
+	def tilt_dict_warning(self):
+		missing_jig = []
+		present_jig = []
+		for jig in self.pos_func_dict:
+			if self.tilt_dict[jig] is None:
+				missing_jig.append(str(jig))
+			else: present_jig.append(str(jig))
+		
+		if len(missing_jig) == len(self.pos_func_dict):
+			QtGui.QMessageBox.information(
+					self, 
+					'Tilt not found', 
+					'Missing tilt calibration of all jigs\n Operation canceled.',
+					QtGui.QMessageBox.Ok
+					)
+			return False
+		elif len(missing_jig) > 0:
+			missing_str = ', '.join(missing_jig)
+			present_str = ', '.join(present_jig)
+			QtGui.QMessageBox.information(
+					self, 
+					'Tilt not found', 
+					'Missing tilt calibration of jig\'s ['+missing_str+']\n Jig\'s ['+missing_str+ '] will be skipped.\n Proceeding with jig\'s ['+present_str+'].',
+					QtGui.QMessageBox.Ok
+					)
+			return True
+		else: return True
 
-	def launch_worker(self, function, closing_func=[]):
+	def launch_worker(self, function, check_func=[], starting_func=[], closing_func=[]):
 		self.disable_all()
-		worker = Worker(function)
-		worker.signals.finished.connect(lambda: self.worker_finished(closing_func))
-		self.thread_pool.start(worker)
-		return
+		
+		run = True
+		for func in check_func:
+			check = func()
+			if not check: 
+				run = False
+				break
+		
+		if run: 
+			for func in starting_func:
+				func()
+				
+			worker = Worker(function)
+			worker.signals.finished.connect(lambda: self.worker_finished(closing_func))
+			self.thread_pool.start(worker)
+			return
+		else:
+			self.enable_all()
 		
 	def worker_finished(self, func_list):
 		self.enable_all()
@@ -774,6 +834,8 @@ class q_box(QtGui.QWidget):
 		print('init q_box')
 		super(q_box, self).__init__(parent)
 		self.setGeometry(50, 50, pix_w, pix_h)
+		self.setWindowTitle("GLUI: info")
+		self.setWindowIcon(QtGui.QIcon('images/GLUI_logo.png'))
 		self.main_window = main_window
 		self.attr_name = attr_name
 		self.exit_functions = exit_functions
@@ -863,6 +925,10 @@ class q_box(QtGui.QWidget):
 		self.main_window.load_flow_and_pres()
 		self.main_window.enable_all()
 		self.close()
+	
+	def closeEvent(self, event):
+		self.main_window.enable_all()
+		event.accept()
 
 		
 class fit_window(QtGui.QWidget):
@@ -870,6 +936,8 @@ class fit_window(QtGui.QWidget):
 	def __init__(self, main_window, guess_pressure=False, pix_w=700, pix_h=500, parent=None):
 		
 		super(fit_window, self).__init__(parent)
+		self.setWindowTitle("GLUI: flow calibration")
+		self.setWindowIcon(QtGui.QIcon('images/GLUI_logo.png'))
 		
 		self.setGeometry(50, 50, pix_w, pix_h)
 		self.main_window = main_window
@@ -1040,10 +1108,16 @@ class fit_window(QtGui.QWidget):
 	def update(self):
 		self.repaint()
 		QtGui.QApplication.processEvents()
+	
+	def closeEvent(self, event):
+		self.main_window.enable_all()
+		event.accept()
+
 		
 class WorkerSignals(QtCore.QObject):
 	finished = QtCore.pyqtSignal()
 
+	
 class Worker(QtCore.QRunnable):
 	def __init__(self, function):
 		#print('init worker')

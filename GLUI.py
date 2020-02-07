@@ -5,6 +5,7 @@ import copy
 from PyQt4 import QtGui, QtCore
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as Canvas
+import glueing_cfg
 from glueing_cfg import DRAWING_CFG, JIG_CFG, GRID_CFG, sum_offsets
 from gcode_handler import gcode_handler, drawing, make_jig_coord_grid, make_quick_func, drawing2, calc_bend, make_jig_tilt_grid
 from scale_handler import scale_handler, delay_and_flow_regulation, read_glue_type, load_f_and_p, write_f_and_p, measure_flow_GUI, timestr_to_ts, ts_to_timestr
@@ -30,10 +31,12 @@ class GLUI(QtGui.QWidget):
 	def __init__(self, app, parent=None):
 		super(GLUI, self).__init__(parent)
 		self.app = app
-		self.setGeometry(50, 50, 1000, 700)
+		self.setGeometry(50, 50, 1000, 400)
 		self.setWindowTitle("GLUI")
 		
-		self.machine = None
+		self.thread_pool = QtCore.QThreadPool()
+		
+		self.machine = gcode_handler()
 		#self.machine.init_code()
 		#self.scale = scale_handler()
 		
@@ -47,9 +50,7 @@ class GLUI(QtGui.QWidget):
 		# Drawing drop down
 		self.current_drawing = DEFAULT_DRAWING
 		self.draw_dd = QtGui.QComboBox()
-		for drawing in DRAWING_CFG:
-			self.draw_dd.addItem(drawing)
-		self.draw_dd.setCurrentIndex(DRAWING_CFG.keys().index(DEFAULT_DRAWING))
+		self.load_dd_draw()
 		self.draw_dd.activated[str].connect(self.choose_drawing)
 		self.grid.addWidget(self.draw_dd, 6, 1)
 		self.draw_lb = QtGui.QLabel('Selected Drawing:')
@@ -58,9 +59,7 @@ class GLUI(QtGui.QWidget):
 		# Jig drop down
 		self.current_jig = DEFAULT_JIG
 		self.jig_dd = QtGui.QComboBox()
-		for jig in JIG_CFG:
-			self.jig_dd.addItem(jig)
-		self.jig_dd.setCurrentIndex(JIG_CFG.keys().index(DEFAULT_JIG))
+		self.load_dd_jig()
 		self.jig_dd.activated[str].connect(self.choose_jig)
 		self.grid.addWidget(self.jig_dd, 7, 1)
 		self.jig_lb = QtGui.QLabel('Selected Jig:')
@@ -69,13 +68,21 @@ class GLUI(QtGui.QWidget):
 		# Grid drop down
 		self.current_grid = DEFAULT_GRID
 		self.grid_dd = QtGui.QComboBox()
-		for grid in GRID_CFG:
-			self.grid_dd.addItem(grid)
-		self.grid_dd.setCurrentIndex(GRID_CFG.keys().index(DEFAULT_GRID))
+		self.load_dd_grid()
 		self.grid_dd.activated[str].connect(self.choose_grid)
 		self.grid.addWidget(self.grid_dd, 8, 1)
 		self.grid_lb = QtGui.QLabel('Selected Grid:')
 		self.grid.addWidget(self.grid_lb, 8, 0)
+		
+		self.load_last_setup()
+		
+		# Reload cfg's
+		self.current_grid = DEFAULT_GRID
+		self.cfg_btn = QtGui.QPushButton('Reload')
+		self.cfg_btn.clicked.connect(self.reload_cfg)
+		self.grid.addWidget(self.cfg_btn, 9, 1)
+		self.cfg_lb = QtGui.QLabel('Reload the configuration files:')
+		self.grid.addWidget(self.cfg_lb, 9, 0)
 		
 		# Overview plot
 		self.figure_ov, self.figure_ov_ax = plt.subplots() 
@@ -93,7 +100,15 @@ class GLUI(QtGui.QWidget):
 		self.grid.addWidget(self.pos_cal_idx_dd, 1, 3)
 		
 		self.position_cal_btn = QtGui.QPushButton('Calibrate')
-		self.position_cal_btn.clicked.connect(self.pos_cal)
+		#self.position_cal_btn.clicked.connect(self.pos_cal)
+		self.position_cal_btn.clicked.connect(
+										lambda: self.launch_worker(
+											self.pos_cal, 
+											closing_func=[
+												self.load_dd_tilt_cal
+												]
+											)
+										)
 		self.grid.addWidget(self.position_cal_btn, 1, 4)
 		self.position_cal_lb = QtGui.QLabel('Calibrate position:')
 		self.grid.addWidget(self.position_cal_lb, 1, 2)
@@ -110,7 +125,8 @@ class GLUI(QtGui.QWidget):
 		self.load_tilt_dict()
 		
 		self.tilt_cal_btn = QtGui.QPushButton('Calibrate')
-		self.tilt_cal_btn.clicked.connect(self.tilt_cal)
+		#self.tilt_cal_btn.clicked.connect(self.tilt_cal)
+		self.tilt_cal_btn.clicked.connect(lambda: self.launch_worker(self.tilt_cal))
 		self.grid.addWidget(self.tilt_cal_btn, 2, 4)
 		self.tilt_cal_lb = QtGui.QLabel('Calibrate tilt:')
 		self.grid.addWidget(self.tilt_cal_lb, 2, 2)
@@ -157,19 +173,17 @@ class GLUI(QtGui.QWidget):
 		self.load_last_glue()
 		self.load_fandp_labels()
 		
-		
-		
-		
 		# Init machine button
 		self.machine_init_btn = QtGui.QPushButton('Init')
-		self.machine_init_btn.clicked.connect(self.init_machine)
+		self.machine_init_btn.clicked.connect(lambda: self.launch_worker(self.init_machine))
 		self.grid.addWidget(self.machine_init_btn, 8, 4)
 		self.machine_init_lb = QtGui.QLabel('Init LitePlacer:')
 		self.grid.addWidget(self.machine_init_lb, 8, 2)
 		
 		# Draw button and label
 		self.dodraw_btn = QtGui.QPushButton('Draw')
-		self.dodraw_btn.clicked.connect(self.draw)
+		#self.dodraw_btn.clicked.connect(self.draw)
+		self.dodraw_btn.clicked.connect(lambda: self.launch_worker(self.draw))
 		self.grid.addWidget(self.dodraw_btn, 4, 4)
 		self.dodraw_lb = QtGui.QLabel('Draw configuration:')
 		self.grid.addWidget(self.dodraw_lb, 4, 2)
@@ -182,7 +196,7 @@ class GLUI(QtGui.QWidget):
 	def choose_drawing(self, text):
 		self.current_drawing = str(text)
 		self.plot_ov()
-		#print(self.current_drawing)
+		self.write_last_setup()
 		
 	def choose_jig(self, text):
 		self.current_jig = str(text)
@@ -190,7 +204,7 @@ class GLUI(QtGui.QWidget):
 		self.load_pos_func_dict()
 		self.load_dd_tilt_cal()
 		self.load_tilt_dict()
-		#print(self.current_jig)
+		self.write_last_setup()
 		
 	def choose_grid(self, text):
 		self.current_grid = str(text)
@@ -199,7 +213,7 @@ class GLUI(QtGui.QWidget):
 		self.load_pos_func_dict()
 		self.load_dd_tilt_cal()
 		self.load_tilt_dict()
-		#print(self.current_grid)
+		self.write_last_setup()
 		
 	def choose_pos_cal_idx(self, text):
 		if 'all' in str(text):
@@ -270,7 +284,11 @@ class GLUI(QtGui.QWidget):
 		self.canvas_ov.draw()
 			
 	def pos_cal(self):
-		self.disable_all()
+		#self.disable_all()
+		if self.machine is None:
+			self.init_warning()
+			#self.enable_all()
+			return
 		file_name = 'cache/CooFile_'+self.current_jig+'_'+self.current_grid+'.py'
 		
 		ret_code = make_jig_coord_grid(
@@ -289,11 +307,15 @@ class GLUI(QtGui.QWidget):
 						)
 		
 		self.load_pos_func_dict()
-		self.load_dd_tilt_cal()
-		self.enable_all()
+		#self.load_dd_tilt_cal()
+		#self.enable_all()
 	
 	def tilt_cal(self):
-		self.disable_all()
+		#self.disable_all()
+		if self.machine is None:
+			self.init_warning()
+			#self.enable_all()
+			return
 		file_name = 'cache/CooFile_'+self.current_jig+'_'+self.current_grid+'.py'
 		max_hight = TABLE_HIGHT - JIG_CFG[self.current_jig]['offsets']['jig_hight'] - JIG_CFG[self.current_jig]['tilt']['max_height']
 		
@@ -328,8 +350,26 @@ class GLUI(QtGui.QWidget):
 						)
 		
 		self.load_tilt_dict()
-		self.enable_all()
-			
+		#self.enable_all()
+
+	def load_dd_draw(self):
+		self.draw_dd.clear()
+		for drawing in DRAWING_CFG:
+			self.draw_dd.addItem(drawing)
+		self.draw_dd.setCurrentIndex(DRAWING_CFG.keys().index(self.current_drawing))
+		
+	def load_dd_jig(self):
+		self.jig_dd.clear()
+		for jig in JIG_CFG:
+			self.jig_dd.addItem(jig)
+		self.jig_dd.setCurrentIndex(JIG_CFG.keys().index(self.current_jig))
+		
+	def load_dd_grid(self):
+		self.grid_dd.clear()
+		for grid in GRID_CFG:
+			self.grid_dd.addItem(grid)
+		self.grid_dd.setCurrentIndex(GRID_CFG.keys().index(self.current_grid))
+		
 	def load_dd_pos_cal(self):
 		self.pos_cal_idx_dd.clear()
 		
@@ -440,16 +480,14 @@ class GLUI(QtGui.QWidget):
 			self.glue_ts_label.setText('From:       none' )
 						
 	def init_machine(self):
-		print('ini ini')
-		print(self.machine_init_btn.isEnabled())
-		self.disable_all()
 		try:
 			self.machine = gcode_handler()
 		except:
+		
 			print('Machine not made')
+			#self.machine = gcode_handler()
 			pass
 		self.machine.init_code()
-		self.enable_all()
 	
 	def set_glue(self):
 		self.disable_all()
@@ -557,16 +595,24 @@ class GLUI(QtGui.QWidget):
 		ff_file.close()
 		
 	def flow_cal(self):
+		self.disable_all()
+		if self.machine is None:
+			self.init_warning()
+			self.enable_all()
+			return
 		self.flow_window = fit_window(self)
 		if self.scale is None:
 			self.scale = scale_handler(False)
 			self.new_glue_to_log()
 		
-		self.disable_all()
 		self.flow_window.show()
 		
 	def draw(self):
-		self.disable_all()
+		#self.disable_all()
+		if self.machine is None:
+			self.init_warning()
+			#self.enable_all()
+			return
 		self.machine.home()
 		for jig in GRID_CFG[self.current_grid]:
 			if not isinstance(jig, int): continue
@@ -624,12 +670,13 @@ class GLUI(QtGui.QWidget):
 				)
 		self.machine.up()
 		self.machine.gotoxy(SCALE_POSITION[0], SCALE_POSITION[1])
-		self.enable_all()
+		#self.enable_all()
 	
 	def toggle_all(self, bool):
 		self.jig_dd.setEnabled(bool)
 		self.grid_dd.setEnabled(bool)
 		self.draw_dd.setEnabled(bool)
+		self.cfg_btn.setEnabled(bool)
 		
 		self.pos_cal_idx_dd.setEnabled(bool)
 		self.position_cal_btn.setEnabled(bool)
@@ -653,8 +700,74 @@ class GLUI(QtGui.QWidget):
 	def update(self):
 		self.repaint()
 		self.app.processEvents()
-	
+		
+	def reload_cfg(self):
+		global DRAWING_CFG
+		global JIG_CFG
+		global GRID_CFG
+		
+		reload(glueing_cfg)
+		from glueing_cfg import DRAWING_CFG, JIG_CFG, GRID_CFG
+		
+		self.load_dd_draw()
+		self.load_dd_grid()
+		self.load_dd_jig()
+		
+	def load_last_setup(self):
+		file_name = 'cache/LastSetupFile.py'
+		
+		try:
+			func_file = open(file_name, 'r')
+			read_data = json.load(func_file)
+			func_file.close()
+		except:
+			read_data = None
+		
+		self.current_grid    = DEFAULT_GRID
+		self.current_jig     = DEFAULT_JIG
+		self.current_drawing = DEFAULT_DRAWING
+		if not read_data is None:
+			self.current_grid    = read_data['grid']
+			self.current_jig     = read_data['jig']
+			self.current_drawing = read_data['drawing']
+		
+		self.load_dd_grid()
+		self.load_dd_jig()
+		self.load_dd_draw()
+		
+	def write_last_setup(self):
+		file_name = 'cache/LastSetupFile.py'
+			
+		new_data = {}
+		new_data['grid']    = self.current_grid
+		new_data['jig']     = self.current_jig 
+		new_data['drawing'] = self.current_drawing 
+		
+		ff_file = open(file_name, 'w')
+		ff_file.write(json.dumps(new_data, indent=2))
+		ff_file.close()
 
+	def init_warning(self):
+		QtGui.QMessageBox.information(
+						self, 
+						'LitePlacer not found', 
+						'Initiate the LitePlacer before you can do this operation.',
+						QtGui.QMessageBox.Ok
+						)
+
+	def launch_worker(self, function, closing_func=[]):
+		self.disable_all()
+		worker = Worker(function)
+		worker.signals.finished.connect(lambda: self.worker_finished(closing_func))
+		self.thread_pool.start(worker)
+		return
+		
+	def worker_finished(self, func_list):
+		self.enable_all()
+		for func in func_list:
+			func()
+
+		
 class q_box(QtGui.QWidget):
 
 	def __init__(self, q_list, t_list, main_window, attr_name, exit_functions=[], pix_w=500, pix_h=200, parent=None):
@@ -750,7 +863,8 @@ class q_box(QtGui.QWidget):
 		self.main_window.load_flow_and_pres()
 		self.main_window.enable_all()
 		self.close()
-			
+
+		
 class fit_window(QtGui.QWidget):
 
 	def __init__(self, main_window, guess_pressure=False, pix_w=700, pix_h=500, parent=None):
@@ -927,26 +1041,23 @@ class fit_window(QtGui.QWidget):
 		self.repaint()
 		QtGui.QApplication.processEvents()
 		
-		
-		
-		
-		
-			
-			
-	# initial needs:
-	#machiene.gotoxy(position=pos)
-	#machiene.down(7)
-	#scale_height = machiene.probe_z(speed=50)[2]
-	#needle_height = scale_height - 1
-	#if init: scale.zero()
-	
-	#machiene.down(needle_height, do_tilt=False) 
-			
-		
-	
-		
-	
+class WorkerSignals(QtCore.QObject):
+	finished = QtCore.pyqtSignal()
 
+class Worker(QtCore.QRunnable):
+	def __init__(self, function):
+		#print('init worker')
+		super(Worker, self).__init__()
+		self.signals = WorkerSignals()
+		self.function = function
+
+	def run(self):
+		#print('run worker')
+		self.function()
+		self.signals.finished.emit()
+		
+		
+		
 if __name__ == "__main__":
 	app = QtGui.QApplication(sys.argv)
 	GUI = GLUI(app)

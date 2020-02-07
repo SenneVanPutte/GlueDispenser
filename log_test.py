@@ -1,11 +1,19 @@
 from scale_handler import scale_handler, measure_delay, delay_and_flow_regulation, ts_to_timestr
 from gcode_handler import gcode_handler, drawing
+from glueing_cfg import DRAWING_CFG, JIG_CFG, GRID_CFG
 import time
 
 import matplotlib
 from matplotlib import pyplot
 
+def imp():
+	from glueing_cfg import DRAWING_CFG, JIG_CFG, GRID_CFG
+	print(GRID_CFG)
+
 if __name__ == '__main__':
+	print(GRID_CFG)
+	imp()
+	imp()
 	# machiene = gcode_handler()
 	#machiene.init_code()
 	

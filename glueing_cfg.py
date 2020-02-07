@@ -395,6 +395,7 @@ GRID_CFG = {
 		1: [0, 0],
 		'coo_file': 'cache/coordinates_1x1.py',
 	},
+	#'1xn': {1: [0, 0]},
 }
 
 FLOW_CFG = {

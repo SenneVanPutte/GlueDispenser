@@ -71,7 +71,9 @@ class scale_handler():
 		self.measure_read_freq()
 		
 	def flow_log_new_glue(self, type, time_str):
-		ts = timestr_to_ts(time_str)
+		if isinstance(time_str, str):
+			ts = timestr_to_ts(time_str)
+		else: ts = time_str
 		record_file = open(self.flow_log, 'a')
 		record_file.write("#\t GLUE TYPE: " + type + "\n")
 		record_file.write("#\t GLUE TS: " + str(ts) + "\n")
@@ -123,9 +125,10 @@ class scale_handler():
 			self.send_command("t")
 			time.sleep(0.2)
 			mass = self.read_mass()
-			if time.time() - start > time_out:	
-				print("Zeroing took longer then : " + str(time_out) + "s ")
-				return
+			if time.time() - start > time_out:
+				raise ScaleError('zeroing timeout of '+str(time_out)+' s exceeded ')
+				#print("Zeroing took longer then : " + str(time_out) + "s ")
+				break
 		return
 				# break
 		
@@ -146,8 +149,9 @@ class scale_handler():
 			self.send_command(option)
 			time.sleep(0.2)
 			mass = self.read_mass()
-			if time.time() - start > time_out:	
-				print("Calibrating took longer then : " + str(time_out) + "s ")
+			if time.time() - start > time_out:
+				raise ScaleError('calibration timeout of '+str(time_out)+' s exceeded ')
+				#print("Calibrating took longer then : " + str(time_out) + "s ")
 				break
 		
 		
@@ -507,6 +511,7 @@ class scale_handler():
 		n_a = 0
 		n_d = 0
 		progress_bar.setValue(0.)
+		jump_time = 2.
 		while not satisfied:
 			value = self.read_port_h()
 			
@@ -547,9 +552,11 @@ class scale_handler():
 				start_m = time.time()
 				waiting_befor = False
 				pressure_thread.start()
+			if not start_m is None and time.time() - start_m < jump_time:
+				jump_mass = value[1]
 			if not waiting_befor and measuring:
 				# Go from measuring to waiting after
-				if mass - avg_mass > th_mass or aq_data > n_data: 
+				if mass - max(jump_mass, avg_mass) > th_mass or aq_data > n_data: 
 					n_d = n_data
 					start_a = time.time()
 					measuring = False
@@ -569,6 +576,118 @@ class scale_handler():
 			#print('pb_prog', pb_prog, 'n_d', n_d, 'n_a', n_a)
 			progress_bar.setValue(pb_prog)
 		progress_bar.setValue(100.)
+		print '' 
+		print('waiting for join')
+		pressure_thread.join()
+		
+		
+		self.write_record(data)
+		return data, redo
+		
+	def read_out_flow_GUI2(self, machiene, pressure, time_ba, mass_lim, update_signal, n_data=2000, display=True, dt_print=0.5, time_out=30):
+		"""
+		Read scale till 'mass_limit' in mg is accumulated on scale.
+		machiene = gcode_handler object
+		pressure = pressure for machiene in mbar
+		time_ba  = wait time before and after in s 
+		"""
+		extra_time = 3.
+		
+		n_tot = n_data + int((2.*time_ba)/self.read_freq) + int(extra_time/self.read_freq)
+		n_pb = 0
+		
+		cmd_queue = Queue.Queue()
+		pressure_thread = Thread(target=self.set_pressure, args=(machiene, pressure, cmd_queue))
+		pressure_thread.setDaemon(True)
+		
+		th_mass = mass_lim/1000.
+		data = []
+		redo = False
+		plot_th = 0
+		
+		waiting_befor = True
+		waiting_after = True
+		measuring = True
+		satisfied = False
+		start_b = time.time()
+		start_m = None
+		start_a = None
+		avg_mass = 0.
+		mass_b = []
+		mass = 0.
+		aq_data = 0
+		n_b = 0
+		n_a = 0
+		n_d = 0
+		update_signal.emit([0., n_tot*self.read_freq, data])
+		jump_time = 2.
+		start_prc = time.time()
+		upd_time = 0.
+		while not satisfied:
+			value = self.read_port_h()
+			
+			if value[0] is not None:
+				mass = value[0]
+				if not waiting_befor and measuring and value[3]: 
+					aq_data += 1
+					n_d = min(aq_data, n_data)
+				if waiting_befor: 
+					mass_b.append(mass)
+					n_b += 1
+				if not waiting_befor and not measuring:
+					n_a += 1
+				if time.time() - start_b > plot_th and display:
+					if value[3]: bool_str = "pressure is  ON"
+					else: bool_str = "pressure is OFF"
+					
+					if measuring and not value[3]:
+						progress = 0.
+						eta = time_out + 0.
+					elif not waiting_befor and measuring and value[3]:
+						progress = (aq_data + 0.)/(n_data + 0.)
+						eta = min((time.time() - start_b - time_ba)*(1./progress -1.), time_out)
+					else:
+						progress = 1.
+						eta = 0.
+					
+					prc_str = '[' + '='*int(40*progress) + ' '*(40 - int(40*progress)) +']'
+					progress_str = '{} [{:6.4} %]'.format(prc_str, progress*100)
+					#print '{} {:6.4} {:6.4} {:6.4} in: {:6.4}s ETA: {:6.4}s {}\r'.format(progress_str, value[0]*1000, value[1]*1000, value[2]*1000, time.time() - start_b, eta, bool_str),
+					print '{} glue used: {:6.4} mg, in: {:6.4}s, ETA: {:6.4}s, {}\r'.format(progress_str, (value[1] - avg_mass + 0.)*1000., time.time() - start_b + 0., eta + 0., bool_str),
+					plot_th += dt_print
+				
+				data.append((time.time(), value))
+			if waiting_befor and time.time() - start_b > time_ba:
+				# Go from waiting to measuring
+				avg_mass = (sum(mass_b) + 0.)/(len(mass_b) + 0.)
+				start_m = time.time()
+				waiting_befor = False
+				pressure_thread.start()
+			if not start_m is None and time.time() - start_m < jump_time:
+				jump_mass = value[1]
+			if not waiting_befor and measuring:
+				# Go from measuring to waiting after
+				if mass - max(jump_mass, avg_mass) > th_mass or aq_data > n_data: 
+					n_d = n_data
+					start_a = time.time()
+					measuring = False
+					cmd_queue.put('kill_pressure')
+				elif time.time() - start_m > time_out:
+					cmd_queue.put('kill_pressure')
+					print('read_out_flow: timed out, mass limit of '+str(mass_lim)+'mg was not met')
+					redo = True
+					break
+			if not measuring and waiting_after and time.time() - start_a > time_ba + extra_time:
+				# stop
+				waiting_after = False
+			satisfied = not (waiting_befor or measuring or waiting_after)
+			pb_prog = max(min(100.*((n_a + n_b + n_d + 0.)/(n_tot + 0.)), 100), 0.)
+			eta = max((n_tot - (n_a + n_b + n_d))*self.read_freq, 0.)
+			if time.time() - start_prc > upd_time:
+				#print(pb_prog)
+				update_signal.emit([pb_prog, eta, data])
+				upd_time += 1
+		update_signal.emit([100., 0., data])
 		print '' 
 		print('waiting for join')
 		pressure_thread.join()
@@ -601,11 +720,12 @@ class scale_handler():
 			
 	def load_data_to_axis(self, data, ax, extra_plots=None, text=None):
 		#ax = axis
+		y_scale = 1000.
 		x = []
 		y = []
 		for entry in data:
 			x.append(entry[0])
-			y.append(entry[1][0])
+			y.append(entry[1][0]*y_scale)
 		x_st = min(x)
 		x_rel = [val - x_st for val in x]
 		#fig, ax = pyplot.subplots() 
@@ -619,14 +739,17 @@ class scale_handler():
 				x_temp = []
 				y_temp = []
 				style = 'r'
+				scale = y_scale
 				for keyy in extra_plots:
 					keyy_splt = keyy.split('_')
 					if key_splt[0] == keyy_splt[0] and '_x' in keyy: x_temp = extra_plots[keyy]
 					if key_splt[0] == keyy_splt[0] and '_y' in keyy: y_temp = extra_plots[keyy]
 					if key_splt[0] == keyy_splt[0] and '_style' in keyy: style = extra_plots[keyy]
+					if key_splt[0] == keyy_splt[0] and '_scale' in keyy: scale = extra_plots[keyy]
 				x_temp_st = 0#min(x_temp)
 				x_temp_rel = [val - x_temp_st for val in x_temp]
-				ax.plot(x_temp_rel, y_temp, style, label=key_splt[0])
+				y_temp_rel = [val*scale for val in y_temp]
+				ax.plot(x_temp_rel, y_temp_rel, style, label=key_splt[0])
 			ax.legend(loc='lower right')
 		
 		if not text is None:
@@ -638,7 +761,7 @@ class scale_handler():
 			bottom = 0.01
 			pyplot.text(left, top, text, horizontalalignment='left', verticalalignment='top', transform=ax.transAxes )
 
-		ax.set(xlabel='time (s)', ylabel='mass (g)', title='')
+		ax.set(xlabel='time (s)', ylabel='mass (mg)', title='')
 		#pyplot.show()
 	
 	def plot_data(self, data, extra_plots=None, text=None):
@@ -786,6 +909,60 @@ def measure_flow_GUI(machiene, scale, pressure, wait_time, mass_lim, mass_thresh
 	y_sim_dn = []
 	
 	data, redo = scale.read_out_flow_GUI(machiene, pressure, wait_time, mass_lim, progress_bar, eta_label, display=True, dt_print=0.5, time_out=time_out)
+	if not redo:
+		ret_dict = calc_delay_and_flow(data, mass_th, scale, wait_time, low_flow)
+		delay = ret_dict['delay']
+		flow = ret_dict['flow']
+		flow_int = ret_dict['flow_int']
+		x_sim = ret_dict['x_sim']
+		y_sim = ret_dict['y_sim']
+		y_sim_up = ret_dict['y_sim_up']
+		y_sim_dn = ret_dict['y_sim_dn']
+		redo = ret_dict['redo']
+		x_st = ret_dict['x_st']
+		x_fi = ret_dict['x_fi']
+		y_st = ret_dict['y_st']
+	if not redo:
+		lin_fit = {}
+		lin_fit['Fit_x'] = x_sim
+		lin_fit['Fit_y'] = y_sim
+		lin_fit['Fit_style'] = 'r'
+		lin_fit['Fit Up_x'] = x_sim
+		lin_fit['Fit Up_y'] = y_sim_up
+		lin_fit['Fit Up_style'] = 'y--'
+		lin_fit['Fit Down_x'] = x_sim
+		lin_fit['Fit Down_y'] = y_sim_dn
+		lin_fit['Fit Down_style'] = 'y--'
+		if not x_st[0] is None:
+			lin_fit['Pressure ON_x'] = x_st
+			lin_fit['Pressure ON_y'] = y_st
+			lin_fit['Pressure ON_style'] = 'c--'
+			lin_fit['Pressure OFF_x'] = x_fi
+			lin_fit['Pressure OFF_y'] = y_st
+			lin_fit['Pressure OFF_style'] = 'c--'
+		
+		fit_text = '{:.1f} mg/s \n{:.1f} mbar'.format(flow, pressure)
+
+		scale.load_data_to_axis(data, axis, extra_plots=lin_fit, text=fit_text)
+		scale.write_flow_log(pressure, flow, delay)
+	else:
+		scale.load_data_to_axis(data, axis)
+
+	return flow
+	
+def measure_flow_GUI2(machiene, scale, pressure, wait_time, mass_lim, mass_threshold, axis, update_signal, time_out=30, low_flow=False):
+
+	mass_th = mass_threshold/1000.
+
+	delay = 0
+	flow = 0
+	flow_int = [-9999, 9999]
+	x_sim = []
+	y_sim = []
+	y_sim_up = []
+	y_sim_dn = []
+	
+	data, redo = scale.read_out_flow_GUI2(machiene, pressure, wait_time, mass_lim, update_signal, display=True, dt_print=0.5, time_out=time_out)
 	if not redo:
 		ret_dict = calc_delay_and_flow(data, mass_th, scale, wait_time, low_flow)
 		delay = ret_dict['delay']
@@ -984,11 +1161,26 @@ def calc_delay_and_flow(data, th, scale, relax_time, low_flow):
 		tw_start = t_pres_on + 10.
 		tw_end = t_pres_of
 	if tw_start > tw_end: 
-		scale.plot_data(data)
+		#scale.plot_data(data)
 		#raise ValueError('Time window messed up')
 		print('Time window messed up')
 		redo = True
-		return 9999, 9999, [], [], [], [], [], redo
+		return_dict = {}
+		return_dict['delay'] = 9999
+		return_dict['flow'] = 9999
+		return_dict['flow_int'] = []
+		return_dict['x_sim'] = []
+		return_dict['y_sim'] = []
+		return_dict['y_sim_up'] = []
+		return_dict['y_sim_dn'] = []
+		return_dict['redo'] = True
+		return_dict['press_int'] = []
+		return_dict['x_st'] = []
+		return_dict['x_fi'] = []
+		return_dict['y_st'] = []
+
+		return return_dict
+		#return 9999, 9999, [], [], [], [], [], redo
 	
 	tw_mass = []
 	tw_time = []
@@ -1265,7 +1457,9 @@ def write_f_and_p(cache_file, flow, pressure):
 	c_file.write(json.dumps(pf_dict))
 	c_file.close()
 	
-	
+class ScaleError(Exception):
+	def __init__(self, message):
+		super(ScaleError, self).__init__(message)
 	
 		
 if __name__ == "__main__":

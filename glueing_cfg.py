@@ -54,7 +54,6 @@ TABLE_HEIGHT = 35
 DRAWING_CFG = {
 	'kapton' : {
 		'file' : 'drawings/kapton_pigtail.dxf',
-		'bend_file': 'cache/NeedleBendVar_blue_metal.txt',
 		'layer': 'kapton',
 		'mass' : 12.,
 		'desired_flow':   0.8,
@@ -65,19 +64,16 @@ DRAWING_CFG = {
 	},
 	'water_kapton' : {
 		'file' : 'drawings/kapton_pigtail.dxf',
-		'bend_file': 'cache/NeedleBendVar_blue_metal.txt',
 		'layer': 'kapton',
 		'mass' : 120.,
-		'desired_flow':   20.,
-		'flow_precision': 5,
-		'init_pressure': 110,
+		'desired_flow':   2.,
+		'flow_precision': 2.,
+		'init_pressure': 50,
 		'above': 0.3,
 		'is_encap': False,
 	},
 	'pigtail_top' : {
-		#'file' : 'drawings/kapton_pigtail.dxf',
 		'file' : 'drawings/kapton_pigtail_flip.dxf',
-		'bend_file': 'cache/NeedleBendVar_blue_metal.txt',
 		'layer': 'pigtail_top',
 		'mass' : 0.4,
 		'desired_flow': 0.3,
@@ -87,8 +83,7 @@ DRAWING_CFG = {
 		'is_encap': False,
 	},
 	'pigtail_bot' : {
-		#'file' : 'drawings/kapton_pigtail.dxf',
-		'file' : 'drawings/kapton_pigtail_flip.dxf', #4.81 up
+		'file' : 'drawings/kapton_pigtail_flip.dxf', 
 		'bend_file': 'cache/NeedleBendVar_blue_metal.txt',
 		'layer': 'pigtail_bot',
 		'mass' : 0.2,
@@ -107,105 +102,6 @@ DRAWING_CFG = {
 		'flow_precision': 0.5,
 		'init_pressure': 2500,
 		'above': 0.6,
-		'is_encap': True,
-	},
-	'hybrid_encap' : {
-		'file' : 'drawings/hybrid_encapsulation.dxf',
-		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
-		'layer': 'hybrid_encap',
-		'mass' : 240.,
-		'desired_flow': 1.7,
-		'flow_precision': 0.5,
-		'init_pressure': 1000,
-		'above': 2.5,
-		'is_encap': True,
-	},
-	'hybrid_encap2' : {
-		'file' : 'drawings/hybrid_encapsulation.dxf',
-		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
-		'layer': 'hybrid_encap2',
-		'mass' : 240.,
-		'desired_flow': 1.7,
-		'flow_precision': 0.5,
-		'init_pressure': 665,
-		'above': 2.5,
-		'is_encap': True,
-	},
-	'hybrid_encap3' : {
-		'file' : 'drawings/hybrid_encapsulation.dxf',
-		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
-		'layer': 'hybrid_encap3',
-		'mass' : 50.,
-		'desired_flow':  1.27564142925,
-		'flow_precision': 0.5,
-		'init_pressure': 800,
-		'above': 2.5,
-		'is_encap': True,
-	},
-	'hybrid_encap4' : {
-		'file' : 'drawings/hybrid_encapsulation.dxf',
-		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
-		'layer': 'hybrid_encap4',
-		'mass' : 5.,
-		'desired_flow': 1.7,
-		'flow_precision': 0.5,
-		'init_pressure': 1000,
-		'above': 1.,
-		'is_encap': True,
-	},
-	'spiral_7l' : {
-		'file' : 'drawings/hybrid_encapsulation.dxf',
-		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
-		'layer': 'hybrid_encap5',
-		'mass' : 400.,
-		'desired_flow': 1.7,
-		'flow_precision': 0.5,
-		'init_pressure': 650,
-		'above': 2.5,
-		'is_encap': True,
-	},
-	'spiral_9' : {
-		'file' : 'drawings/hybrid_encapsulation.dxf',
-		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
-		'layer': 'hybrid_encap6',
-		'mass' : 400.,
-		'desired_flow': 1.7,
-		'flow_precision': 0.5,
-		'init_pressure': 800,
-		'above': 2.5,
-		'is_encap': True,
-	},
-	'ladder_0.7' : {
-		'file' : 'drawings/hybrid_encapsulation.dxf',
-		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
-		'layer': 'hybrid_encap7',
-		'mass' : 450.,
-		'desired_flow': 1.7,
-		'flow_precision': 0.5,
-		'init_pressure': 800,
-		'above': 1.5,
-		'is_encap': True,
-	},
-	'ladder_0.5' : {
-		'file' : 'drawings/hybrid_encapsulation.dxf',
-		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
-		'layer': 'hybrid_encap8',
-		'mass' : 400.,
-		'desired_flow': 1.7,
-		'flow_precision': 0.5,
-		'init_pressure': 800,
-		'above': 1.5,
-		'is_encap': True,
-	},
-	'ladder_0.6' : {
-		'file' : 'drawings/hybrid_encapsulation.dxf',
-		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
-		'layer': 'hybrid_encap9',
-		'mass' : 400.,
-		'desired_flow': 1.7,
-		'flow_precision': 0.5,
-		'init_pressure': 800,
-		'above': 1.5,
 		'is_encap': True,
 	},
 	'maze' : {
@@ -230,6 +126,90 @@ DRAWING_CFG = {
 		'above': 1.1,
 		'is_encap': True,
 	},
+	'hybrid_m' : {
+		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
+		'layer': 'sensor_encap',
+		'mass' : 800.,
+		'desired_flow': 1.4,
+		'flow_precision': 0.3,
+		'init_pressure': 500,
+		'above': 1.,
+		'is_encap': True,
+	},
+	'line' : {
+		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
+		'layer': 'encap_line',
+		'mass' : 400.,
+		'desired_flow': 1.4,
+		'flow_precision': 0.3,
+		'init_pressure': 500,
+		'above': 1.2,
+		'is_encap': True,
+	},
+	'spiral_5' : {
+		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
+		'layer': 'spiral_5',
+		'mass' : 400.,
+		'desired_flow': 1.4,
+		'flow_precision': 0.3,
+		'init_pressure': 500,
+		'above': 1.2,
+		'is_encap': True,
+	},
+	'maze_fast' : {
+		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'bend_file': 'cache/NeedleBendVar_pink_metal.txt',
+		'layer': 'hybrid_encap_maze',
+		'mass' : 400.,
+		'desired_flow': 2.8,
+		'flow_precision': 0.5,
+		'init_pressure': 500,
+		'above': 1.3,
+		'is_encap': True,
+	},
+	'hybrid_s5' : {
+		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'layer': 'sensor_encap_spiral_5',
+		'mass' : 900.,
+		'desired_flow': 1.4,
+		'flow_precision': 0.3,
+		'init_pressure': 200,
+		'above': 0.9,
+		'is_encap': True,
+	},
+	'hybrid_s7' : {
+		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'layer': 'sensor_encap_spiral_7',
+		'mass' : 900.,
+		'desired_flow': 1.4,
+		'flow_precision': 0.3,
+		'init_pressure': 200,
+		'above': 0.9,
+		'is_encap': True,
+	},
+	'hybrid_s9' : {
+		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'layer': 'sensor_encap_spiral_9',
+		'mass' : 900.,
+		'desired_flow': 1.4,
+		'flow_precision': 0.3,
+		'init_pressure': 200,
+		'above': 0.9,
+		'is_encap': True,
+	},
+	'hybrid_s9b' : {
+		'file' : 'drawings/hybrid_encapsulation.dxf',
+		'layer': 'sensor_encap_spiral_9b',
+		'mass' : 900.,
+		'desired_flow': 1.4,
+		'flow_precision': 0.3,
+		'init_pressure': 200,
+		'above': 0.9,
+		'is_encap': True,
+	},
 }
 
 
@@ -237,7 +217,7 @@ DRAWING_CFG = {
 JIG_CFG = {
 	'kapton_A':{
 		'offsets' : {
-			'coordinate_origin' : [26, 105],#[80, 110],
+			'coordinate_origin' : [26, 105],
 			'drawing_position' : [35.25, 12.5],
 			'jig_hight': 15,
 		},
@@ -248,7 +228,7 @@ JIG_CFG = {
 			'dy':       100,  
 			'dth':      1, 
 			'prb_h':    0.75,
-			'jig_file': 'cache/kapton_jig_coo.py'
+			#'jig_file': 'cache/kapton_jig_coo.py'
 		},
 		'tilt': {
 			'p1': [10, -5],
@@ -256,18 +236,14 @@ JIG_CFG = {
 			'p3': [10, 120],
 			'max_height': 6,
 		},
-		#'flow': {
-		#	'desired_flow': 10,
-		#},
 		'drawing': {
 			'hight': 5.1, #5 +/-0.1 
-			#'file' : 'kapton_pigtail.dxf',
 		},
 	},
 	'kapton_B':{
 		'offsets' : {
-			'coordinate_origin' : [26, 95],#[36, 110],
-			'drawing_position' : [36.5, 28],#[1.25, 0], #[2.25, 3]
+			'coordinate_origin' : [26, 95],
+			'drawing_position' : [36.5, 28],
 			'jig_hight': 15,
 		},
 		'probe': {
@@ -355,7 +331,7 @@ JIG_CFG = {
 	'table_hybrid':{
 		'offsets' : {
 			'coordinate_origin' : [10, 85],
-			'drawing_position' : [24, 25.5],#Dark green jig [24.5, 24.5],
+			'drawing_position' : [22, 27.25],#Dark green jig [24.5, 24.5],
 			'jig_hight': 3,
 		},
 		'probe': {
@@ -368,9 +344,14 @@ JIG_CFG = {
 			'jig_file': 'cache/table_jig_coo.py'
 		},
 		'tilt': {
-			'p1': [15, 5],
-			'p2': [85, 5],
-			'p3': [15, 85],
+			# On jig
+			# 'p1': [15, 5],
+			# 'p2': [85, 5],
+			# 'p3': [15, 85],
+			# On test PCB
+			'p1': [25, 16],
+			'p2': [115, 16],
+			'p3': [25, 40],
 			'max_height': 6,
 		},
 		'flow': {
@@ -381,6 +362,35 @@ JIG_CFG = {
 			'file' : 'kapton_pigtail.dxf',
 		},
 	},
+	'carrier':{
+		'offsets' : {
+			'coordinate_origin' : [10, 80],
+			'drawing_position' : [47.5, 38.],
+			'jig_hight': 14,
+		},
+		'probe': {
+			'probe_x':  'x-', 
+			'probe_y':  'y-',
+			'dx':       155, 
+			'dy':       150,  
+			'dth':      1,  
+			'prb_h':    0.75,
+		},
+		'tilt': {
+			# Measures tilt on hybrids
+			# 'p1': [39, 33],
+			# 'p2': [156, 35],
+			# 'p3': [39, 131],
+			# Right next to bonds
+			'p1': [42.5, 42],
+			'p2': [155, 42],
+			'p3': [42.5, 124],
+			'max_height': 5,
+		},
+		'drawing': {
+			'hight': 0.,
+		},
+	},
 }
 
 GRID_CFG = {
@@ -389,11 +399,9 @@ GRID_CFG = {
 		2: [0, 150],
 		3: [150, 150],
 		4: [150, 0],
-		'coo_file': 'cache/coordinates_2x2.py',
 	},
 	'1x1': {
 		1: [0, 0],
-		'coo_file': 'cache/coordinates_1x1.py',
 	},
 	#'1xn': {1: [0, 0]},
 }

@@ -82,7 +82,7 @@ class gcode_handler():
 		if not os.path.isfile(self.glue_log): open(self.glue_log, 'w+')
 		
 		
-		signal.signal(signal.SIGINT, self.emergency_stop)
+		#signal.signal(signal.SIGINT, self.emergency_stop)
 		
 	def init_glue_log(self):
 		log = open(self.glue_log, 'a+')
@@ -294,6 +294,7 @@ class gcode_handler():
 						self.log_file.write("######--ERROR--######\n")
 						self.log_file.write(line)
 						self.log_file.write("######---------######")
+						raise LitePlacerError('LitePlacer: ' + resp_dict["er"]["msg"])
 					#print(l, line)
 				if not line == unicode(""):
 					self.log_file.write("send bloc read: "+ line)
@@ -532,7 +533,7 @@ class gcode_handler():
 		; PWM config for glue dispenser
 		$p1frq=10000 ;10kHz
 		$p1csl=0     ;lowest=0
-		$p1csh=5700 ; highest in mbar
+		$p1csh=2350 ; highest in mbar (5700 old setup)
 		$p1cpl=0.0
 		$p1cph=1.0 ;for 1.0 duty cycle
 		$p1pof=0.0 ;set m5 (off pressure) to 0
@@ -614,7 +615,10 @@ class gcode_handler():
 	
 	def __del__(self):
 		print("This is the end")
-		self.send_bloc("M30")
+		try:
+			self.send_bloc("M30")
+		except:
+			pass
 		print("Turn away and count to ten")
 	
 def probe(machiene, start_x, start_y, dir='y+', threshold_h=19, step=1, speed=50, up=15, prb_h=0.75):
@@ -1417,6 +1421,13 @@ def offset_test(offset):
 	# Test if offset will not be out of range
 	if offset[0] < MIN_OFFSET[0]: raise ValueError("DANGER: x offset to low, nozzle will collide with rack.")
 	if offset[1] < MIN_OFFSET[1]: print("WARNING: y offset lower then MIN_OFFSET[y], may draw out of range.")
+
+	
+class LitePlacerError(Exception):
+	def __init__(self, message):
+		super(LitePlacerError, self).__init__(message)
+		#self.errors = errors
+		
 
 if __name__ == '__main__':
 	print(calc_bend(100, 'cache/NeedleBendVar_blue_metal.txt'))

@@ -15,8 +15,10 @@ import Queue
 from glueing_cfg import BOARDS_CFG, ST_CFG, MIN_OFFSET
 import copy
 
-GLOBAL_OFFSET = [62.5, 42]
-# Needle to 0,0 position
+#GLOBAL_OFFSET = [62.5, 42]
+GLOBAL_OFFSET = [53, 28] # Needle to 0,0 changed after laser sensor mounting
+#CAMERA_OFFSET = [80. , 40] # Offset camera to needle position
+CAMERA_OFFSET = [78.5 , 108.2]
 
 #3231 phone yannick
 
@@ -113,6 +115,10 @@ class gcode_handler():
 		probe_thread = Thread(target=self.wait_probe_stop, args=(q,))
 		probe_thread.setDaemon(True)
 		self.send_bloc("$zsx=1")
+		
+		# motor timeout to 1s during probe
+		self.send_bloc("$mt=1")
+		
 		#time.sleep(0.5)
 		probe_thread.start()
 		
@@ -123,6 +129,9 @@ class gcode_handler():
 		z_dwn = position[2]
 		#print("retrieved z value is " + str(z))
 		
+		# motor timeout back to 1800s
+		self.send_bloc("$mt=1800")
+		
 		#self.send_bloc("$zsx=0")
 		#time.sleep(0.5)
 		if up_rel is None:
@@ -130,7 +139,10 @@ class gcode_handler():
 		else:
 			self.down(max(z_dwn - up_rel, 0))
 		#time.sleep(0.5)
+		
 		self.send_bloc("$zsx=2 ")
+
+		
 		
 		self.write_glue_log("probe result: "+str(position[-1]), time_stamp=True)
 		return position
@@ -138,7 +150,7 @@ class gcode_handler():
 	def wait_probe_stop(self, queue):
 		start = time.time()
 		between = time.time()
-		time_out = 4
+		time_out = 5
 		probe_stopped = False
 		was_moving = False
 		temp_z = 0
@@ -428,6 +440,84 @@ class gcode_handler():
 		#self.tilt_map_og[0] = point1[0]
 		#self.tilt_map_og[1] = point1[1]
 		#self.tilt_map_og[2] = z_1
+		
+	def measure_tilt_3p_laser(self, laser_sensor, point1, point2, point3):
+		#point1 is taken as the origin 
+		if point1 == point2 or point1 == point3 or point2 == point3: raise ValueError("measure_tilt_3p requires 3 different points")
+		delta_x2 = point2[0] - point1[0]
+		delta_x3 = point3[0] - point1[0]
+		delta_y2 = point2[1] - point1[1]
+		delta_y3 = point3[1] - point1[1]
+		
+		collinear = False
+		if delta_x2 == 0 and delta_x3 == 0: collinear = True
+		elif delta_y2 == 0 and delta_y3 == 0: collinear = True
+		else:
+			if delta_y2 != 0 and delta_y3 != 0:
+				if (delta_x2 + 0.0)/(delta_y2 + 0.0) == (delta_x3 + 0.0)/(delta_y3 + 0.0): collinear = True
+		
+		if collinear: raise ValueError("measure_tilt_3p requires 3 noncollinear points")
+		
+		self.up()
+		self.set_tilt()
+		#self.gotoxy(point1[0],point1[1])
+		#raw_input('continue')
+		z1 = laser_sensor.HeightAt(self,point1[0],point1[1])
+		p_1 = [point1[0], point1[1], z1]
+		
+		z2 = laser_sensor.HeightAt(self,point2[0],point2[1])
+		p_2 = [point2[0], point2[1], z2]
+		
+		z3 = laser_sensor.HeightAt(self,point3[0],point3[1])
+		p_3 = [point3[0], point3[1], z3]
+		
+		z_1 = p_1[2]
+		z_2 = p_2[2]
+		z_3 = p_3[2]
+		
+		delta_x2 = p_2[0] - p_1[0]
+		delta_x3 = p_3[0] - p_1[0]
+		delta_y2 = p_2[1] - p_1[1]
+		delta_y3 = p_3[1] - p_1[1]
+		
+		delta_z2 = z_2 - z_1 
+		delta_z3 = z_3 - z_1
+		
+		#delta_z2 = x_tilt*delta_x2 + y_tilt*delta_y2
+		#delta_z3 = x_tilt*delta_x3 + y_tilt*delta_y3
+		
+		if delta_x2 == 0:
+			x_tilt = (delta_y3*delta_z2 - delta_y2*delta_z3 + 0.0)/(-delta_x3*delta_y2 + 0.0)
+			y_tilt = (delta_z2 + 0.0)/(delta_y2 + 0.0)
+		elif delta_y2 == 0:
+			x_tilt = (delta_z2 + 0.0)/(delta_x2 + 0.0)
+			y_tilt = (delta_x3*delta_z2 - delta_x2*delta_z3 + 0.0)/(-delta_x2*delta_y3 + 0.0)
+		else:
+			#x_tilt = ((delta_z2/delta_y2) - ((delta_z3*delta_z3)/(delta_y3*delta_x3)) + 0.0)/((delta_x2/delta_y2) - (delta_z3/delta_x3) + 0.0)
+			#y_tilt = ((delta_z3/delta_x3) - (delta_z2/delta_x2) + 0.0)/((delta_y3/delta_z3) - (delta_y2/delta_x2) + 0.0)
+			x_tilt = (delta_y3*delta_z2 - delta_y2*delta_z3 + 0.0)/(delta_x2*delta_y3 - delta_x3*delta_y2 + 0.0)
+			y_tilt = (delta_x3*delta_z2 - delta_x2*delta_z3 + 0.0)/(delta_x3*delta_y2 - delta_x2*delta_y3 + 0.0)
+		
+		print("x_tilt = " + str(x_tilt))
+		print("y_tilt = " + str(y_tilt))
+		
+		self.set_tilt(x_tilt, y_tilt)
+		self.tilt_map_og = p_1
+	
+	def move_camera_xy(self, x_pos=None,y_pos=None, speed=None, position=None):
+		if position is None:
+			x = x_pos
+			y = y_pos
+			#z = z_pos
+		else:
+			x = position[0]
+			y = position[1]
+			#z = position[2]
+			
+		x -=  self.camera_offset[0]
+		y -=  self.camera_offset[1]
+		#self.gotoxyz( x_pos=x, y_pos=y, z_pos=z, speed=speed)
+		self.gotoxy(x_pos=x,y_pos=y, speed=speed, do_tilt=False)
 	
 	def gotoxy(self, x_pos=None,y_pos=None, speed=None, position=None, do_tilt=True):
 		if position is None:
@@ -543,6 +633,8 @@ class gcode_handler():
 		G61 ;e-xact path model
 		G21; select mm unit (just in case)
 		G40 ; cancel cutter radius compensation
+		$mt=3600 ; motor timeout in seconds
+		$1pm=1 ; motor always on
 		"""
 		self.send_bloc(code1)
 		print("Done")
@@ -552,16 +644,36 @@ class gcode_handler():
 		#gcode = "G52 X{} Y{}".format(x, y)
 		self.send_bloc(gcode)
 		
+	def set_camera_offset(self, x, y):
+		self.camera_offset = [x, y]
+	
 	def init_code(self):
 		#send initialisation sequence $st=0 $jv=3 $ee=1 $ej=0
 		print("Preparing LitePlacer ...")
+		# print out settings
+		self.send_bloc('''
+		$mt=1800;
+		$1pm;
+		''')
 		code1="""
 		$p1pof=0.0;
-		$zsx=2; set limit switch on in case of messup in prev
+		$zsv=200;
+		$zsx=0; set limit switch on in case of messup in prev
+		$zjh=20; homing z acceleration (low for limit switch)
 		"""
 		
 		self.send_bloc(code1)
+		#self.send_bloc('''
+		#$1pm ;
+		#$1pm=1 ; motor always on
+		#$me=3 ; turn on z motor
+		#$zsx=2;
+		#''')
+		#time.sleep(0.5)
 		self.home()
+		self.send_bloc('''
+		$zsx=2;
+		''')
 		#self.send_bloc(code2)
 		print("Done")
 	
@@ -573,6 +685,7 @@ class gcode_handler():
 		"""
 		self.send_bloc(bloc)
 		self.set_global_offset(GLOBAL_OFFSET[0], GLOBAL_OFFSET[1])
+		self.set_camera_offset(CAMERA_OFFSET[0], CAMERA_OFFSET[1])
 		self.gotoxy(0, 0)
 	
 	def closing_code(self):
@@ -671,7 +784,7 @@ def probe(machiene, start_x, start_y, dir='y+', threshold_h=19, step=1, speed=50
 		#print("next")
 		return probe(machiene, final_x - d_pos[0], final_y - d_pos[1], dir=dir, threshold_h=threshold_h, step=(step + 0.0)/4., speed=max((speed + 0.0)/2., 25), up=prev_z - 0.75)
 	
-def probe2(machiene, start_x, start_y, dir='y+', threshold_h=19, step=1, speed=50, up=15, prb_h=0.75):
+def probe2(machiene, start_x, start_y, dir='y+', threshold_h=19, step=1, speed=50, up=15, prb_h=0.75, probe_speed=50):
 	if step < 0.025:
 		print("finished")
 		return
@@ -715,7 +828,7 @@ def probe2(machiene, start_x, start_y, dir='y+', threshold_h=19, step=1, speed=5
 		final_x = start_x + it*d_pos[0]
 		final_y = start_y + it*d_pos[1]
 		machiene.gotoxy(final_x, final_y, speed=speed)
-		posy = machiene.probe_z(speed=100, up_rel=prb_h, max_z = threshold_h + 1)
+		posy = machiene.probe_z(speed=probe_speed, up_rel=prb_h, max_z = threshold_h + 1)
 		#print(posy)
 		new_z = posy[2]
 		it += 1
@@ -731,28 +844,85 @@ def probe2(machiene, start_x, start_y, dir='y+', threshold_h=19, step=1, speed=5
 		#print("next")
 		return probe2(machiene, final_x - d_pos[0], final_y - d_pos[1], dir=dir, threshold_h=threshold_h, step=(step + 0.0)/4., up=prev_z - 0.75)
 	
-def measure_coord(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1.15, probe_x='x-', probe_y='y+', prb_h=0.75):
+def measure_coord(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1.15, probe_x='x-', probe_y='y+', prb_h=0.75, probe_speed=50):
 	machiene.gotoxy(x_guess, y_guess)
 	machiene.down(up)
-	th_h = machiene.probe_z(speed=100, up_rel=0.75)[2] + dth
-	[x1, y1] = probe2(machiene, x_guess, y_guess, dir=probe_y, threshold_h=th_h, up=th_h - 0.5 - dth, prb_h=prb_h)
+	th_h = machiene.probe_z(speed=50, up_rel=prb_h)[2] + dth
+	[x1, y1] = probe2(machiene, x_guess, y_guess, dir=probe_y, threshold_h=th_h, up=th_h - prb_h - dth, prb_h=prb_h, probe_speed=probe_speed)
 	machiene.up()
 	machiene.gotoxy(x_guess + dx, y_guess)
 	machiene.down(up - 4)
-	th_h = machiene.probe_z(speed=100, up_rel=0.75)[2] + dth
-	[x2, y2] = probe2(machiene, x_guess + dx, y_guess, dir=probe_y, threshold_h=th_h, up=th_h - 0.5 - dth, step=4, speed=100, prb_h=prb_h)
+	th_h = machiene.probe_z(speed=50, up_rel=prb_h)[2] + dth
+	[x2, y2] = probe2(machiene, x_guess + dx, y_guess, dir=probe_y, threshold_h=th_h, up=th_h - prb_h - dth, step=4, speed=100, prb_h=prb_h, probe_speed=probe_speed)
 	machiene.up()
 	if probe_x[-1] == '+':
 		dxx = 15
-		x_geuss_2 = max(x_guess - dxx, -1)
+		#x_geuss_2 = max(x_guess - dxx, -1)
+		x_geuss_2 = x_guess - dxx
 	else:
 		dxx = 0
-		x_geuss_2 = max(x_guess - dxx, -1)
+		#x_geuss_2 = max(x_guess - dxx, -1)
+		x_geuss_2 = x_guess - dxx
 	machiene.gotoxy(x_geuss_2, y_guess + dy)
 	machiene.down(up - 6)
-	th_h = machiene.probe_z(speed=100, up_rel=0.75)[2] + dth
-	[x3, y3] = probe2(machiene, x_geuss_2, y_guess + dy, dir=probe_x, threshold_h=th_h, step=4, speed=100, up=th_h - 0.5 - dth, prb_h=prb_h)
+	th_h = machiene.probe_z(speed=50, up_rel=prb_h)[2] + dth
+	[x3, y3] = probe2(machiene, x_geuss_2, y_guess + dy, dir=probe_x, threshold_h=th_h, step=4, speed=100, up=th_h - prb_h - dth, prb_h=prb_h, probe_speed=probe_speed)
 	machiene.up()
+	
+	sin_th = (y2 - y1 + 0.)/(math.sqrt((x2 - x1 + 0.)**2 + (y2 - y1 + 0.)**2))
+	cos_th = (x2 - x1 + 0.)/(math.sqrt((x2 - x1 + 0.)**2 + (y2 - y1 + 0.)**2))
+	
+	
+	print("sin = " + str(sin_th) + ",\t theta = " + str(math.asin(sin_th)) + " (" + str(math.asin(sin_th)*180/math.pi) + ")")
+	print("cos = " + str(cos_th) + ",\t theta = " + str(math.acos(cos_th)) + " (" + str(math.acos(cos_th)*180/math.pi) + ")")
+	
+	if x1 == x2:
+		raise ValueError("make_jig_coord: first point and second point can not have the same x value")
+	if y2 == y1:
+		print("Congratz, perfectly parallel")
+		b = y1
+		a = x3
+	else:
+		tan_th = (y2 - y1 + 0.)/(x2 - x1 + 0.)
+		a = ((x3 + 0.)/tan_th + y3 - y1 + tan_th*x1)/(tan_th + 1/tan_th)
+		b = tan_th*(a - x1) + y1
+	
+	print("a = " + str(a))
+	print("b = " + str(b))
+	
+	return a, b, sin_th, cos_th
+	
+#def measure_coord_laser(machiene, laser_sensor, x_guess, y_guess, dx=135, dy=100, up=15, dth=1.15, probe_x='x-', probe_y='y+'):
+def measure_coord_laser(machiene, laser_sensor, p1, p2, p3, up=15, dth=1.15, probe_x='x-', probe_y='y+'):
+	#machiene.gotoxy(x_guess, y_guess)
+	#machiene.down(up)
+	
+	guess_l = [p1[0] - laser_sensor.get_dx0(), p1[1] - laser_sensor.get_dy0()]
+	#guess_l = [p1[0], p1[1]]
+	p_sign = 1
+	if probe_y.endswith('-'): p_sign = -1
+	#th_h = machiene.probe_z(speed=50, up_rel=prb_h)[2] + dth
+	x1 = p1[0]
+	y1 = laser_sensor.EdgeDetection_InNeedleCoordination(machiene, guess_l, p_sign*10, 'y', up)
+	print('found edge: ', x1, y1)
+	
+	guess_l = [p2[0] - laser_sensor.get_dx0(), p2[1] - laser_sensor.get_dy0()]
+	#guess_l = [p2[0], p2[1]]
+	p_sign = 1
+	if probe_y.endswith('-'): p_sign = -1
+	#th_h = machiene.probe_z(speed=50, up_rel=prb_h)[2] + dth
+	x2 = p2[0]
+	y2 = laser_sensor.EdgeDetection_InNeedleCoordination(machiene, guess_l, p_sign*10, 'y', up)
+	print('found edge: ', x2, y2)
+	
+	guess_l = [p3[0] - laser_sensor.get_dx0(), p3[1] - laser_sensor.get_dy0()]
+	#guess_l = [p3[0], p3[1]]
+	p_sign = 1
+	if probe_x.endswith('-'): p_sign = -1
+	#th_h = machiene.probe_z(speed=50, up_rel=prb_h)[2] + dth
+	y3 = p3[1]
+	x3 = laser_sensor.EdgeDetection_InNeedleCoordination(machiene, guess_l, p_sign*10, 'x', up)
+	print('found edge: ', x3, y3)
 	
 	sin_th = (y2 - y1 + 0.)/(math.sqrt((x2 - x1 + 0.)**2 + (y2 - y1 + 0.)**2))
 	cos_th = (x2 - x1 + 0.)/(math.sqrt((x2 - x1 + 0.)**2 + (y2 - y1 + 0.)**2))
@@ -858,7 +1028,7 @@ def make_jig_coord(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1.15, 
 		board_coo = make_quick_func( sin=old_data["sin"], cos=old_data["cos"], a=old_data["offset_x"], b=old_data["offset_y"])
 		return board_coo
 		
-def make_jig_coord_grid(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1.15, probe_x='x-', probe_y='y+', prb_h=0.75, cache_file=None, grid_dict=None, grid_idx='all'):
+def make_jig_coord_grid(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1.15, probe_x='x-', probe_y='y+', prb_h=0.75, cache_file=None, grid_dict=None, grid_idx='all', probe_speed=50):
 	
 	if grid_dict is None: raise ValueError('make_jig_coord_grid: grid_dict can not be None')
 	
@@ -906,7 +1076,8 @@ def make_jig_coord_grid(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1
 									dth=dth, 
 									probe_x=probe_x, 
 									probe_y=probe_y, 
-									prb_h=prb_h
+									prb_h=prb_h,
+									probe_speed=probe_speed,
 									)
 			new_data[grid]['offset_x'] = a
 			new_data[grid]['offset_y'] = b
@@ -920,6 +1091,95 @@ def make_jig_coord_grid(machiene, x_guess, y_guess, up=15, dx=135, dy=100, dth=1
 			# cos_th = new_data[grid]['cos']
 			
 		# coo_f_dict[grid] = make_quick_func( sin=sin_th, cos=cos_th, a=a, b=b)
+		
+	# Compare new to old
+	for grid in all_keys:
+		if not grid in old_data: continue
+		if not grid in to_do: continue
+		if not 'offset_x' in old_data[grid]: continue
+		old_th = math.asin(old_data[grid]['sin'])*180./math.pi
+		new_th = math.asin(new_data[grid]['sin'])*180./math.pi
+		print('Jig '+str(grid)+' shifts: ')
+		print('--     dx: '+str(new_data[grid]['offset_x'] - old_data[grid]['offset_x'])+' mm')
+		print('--     dy: '+str(new_data[grid]['offset_y'] - old_data[grid]['offset_y'])+' mm')
+		print('-- dtheta: '+str(new_th - old_th)+' degree\'s')
+	
+	#if data_adapted:
+	grid_file = open(grid_file_name, 'w')
+	grid_file.write(json.dumps(new_data, indent=2))
+	
+	return 0
+	
+#def make_jig_coord_grid_laser(machiene, laser_sensor, x_guess, y_guess, dx=135, dy=100, up=15, dth=1.15, probe_x='x-', probe_y='y+', cache_file=None, grid_dict=None, grid_idx='all'):
+def make_jig_coord_grid_laser(machiene, laser_sensor, p1, p2, p3, up=15, dth=1.15, probe_x='x-', probe_y='y+', cache_file=None, grid_dict=None, grid_idx='all'):
+	
+	if grid_dict is None: raise ValueError('make_jig_coord_grid: grid_dict can not be None')
+	
+	file_existed = True
+	grid_file_name = cache_file
+	old_data = {}
+	try:
+		grid_file = open(grid_file_name, 'r')
+		old_data = json.load(grid_file)
+		grid_file.close()
+	except:
+		old_data = {}
+		file_existed = False
+	
+	new_data = copy.deepcopy(old_data)
+	all_keys = []
+	for key in grid_dict:
+		if not isinstance(key, int): continue
+		if not unicode(key) in new_data:
+			new_data[unicode(key)] = {}
+			new_data[unicode(key)]['offset_x'] = None
+			new_data[unicode(key)]['offset_y'] = None
+			new_data[unicode(key)]['sin'] = None
+			new_data[unicode(key)]['cos'] = None
+		all_keys.append(unicode(key))
+				
+	
+	if 'all' in str(grid_idx): to_do = all_keys
+	#if not file_existed: to_do = all_keys
+	else: to_do = [unicode(grid_idx)]
+	
+	coo_f_dict = {}
+	#new_data = copy.deepcopy(old_data)
+	data_adapted = False
+	for grid in all_keys:
+		if grid in to_do:
+			data_adapted = True
+			
+			# 25/10/2021 home to reset accuracy (motor turn off)
+			machiene.home()
+			
+			a, b, sin_th, cos_th = measure_coord_laser(
+									machiene, 
+									laser_sensor,
+									p1, 
+									p2,  
+									p3,
+									up=up,
+									dth=dth, 
+									probe_x=probe_x, 
+									probe_y=probe_y
+									)
+			new_data[grid]['offset_x'] = a
+			new_data[grid]['offset_y'] = b
+			new_data[grid]['sin'] = sin_th
+			new_data[grid]['cos'] = cos_th
+		
+	# Compare new to old
+	for grid in all_keys:
+		if not grid in old_data: continue
+		if not grid in to_do: continue
+		if not 'offset_x' in old_data[grid]: continue
+		old_th = math.asin(old_data[grid]['sin'])*180./math.pi
+		new_th = math.asin(new_data[grid]['sin'])*180./math.pi
+		print('Jig '+str(grid)+' shifts: ')
+		print('--     dx: '+str(new_data[grid]['offset_x'] - old_data[grid]['offset_x'])+' mm')
+		print('--     dy: '+str(new_data[grid]['offset_y'] - old_data[grid]['offset_y'])+' mm')
+		print('-- dtheta: '+str(new_th - old_th)+' degree\'s')
 	
 	#if data_adapted:
 	grid_file = open(grid_file_name, 'w')
@@ -970,6 +1230,81 @@ def make_jig_tilt_grid(machiene, p1, p2, p3, max_height, tilt_speed, coord_func_
 		
 		new_data[jig]["tilt_map"] = machiene.tilt_map
 		new_data[jig]["tilt_map_og"] = machiene.tilt_map_og
+	
+	# Compare new to old
+	for jig in to_do:
+		if not jig in old_data: continue
+		if not 'tilt_map' in old_data[jig]: continue
+		if old_data[jig]['tilt_map'] is None: continue
+	
+		print('Jig '+str(jig)+' tilt changes: ')
+		print('-- difference in origin height: '+str(new_data[jig]['tilt_map_og'][2] - old_data[jig]['tilt_map_og'][2]) + ' mm')
+		print('-- old tilt x in 10 cm: '+str(old_data[jig]['tilt_map']['x_tilt']*100.)+' mm')
+		print('-- new tilt x in 10 cm: '+str(new_data[jig]['tilt_map']['x_tilt']*100.)+' mm')
+		print('-- old tilt y in 10 cm: '+str(old_data[jig]['tilt_map']['y_tilt']*100.)+' mm')
+		print('-- new tilt y in 10 cm: '+str(new_data[jig]['tilt_map']['y_tilt']*100.)+' mm')
+	
+	
+	grid_file = open(cache_file, 'w')
+	grid_file.write(json.dumps(new_data, indent=2))
+	
+	return 0
+	
+def make_jig_tilt_grid_laser(machiene, laser_sensor, p1, p2, p3, coord_func_dict=None, cache_file=None, grid_dict=None, grid_idx='all'):
+	if grid_dict is None: raise ValueError('make_jig_tilt_grid: grid_dict can not be None')
+	#print(grid_dict)
+	
+	if not os.path.isfile(cache_file):
+		return 99
+	
+	grid_file = open(cache_file, 'r')
+	old_data = json.load(grid_file)
+	grid_file.close()
+	new_data = copy.deepcopy(old_data)
+	
+	all_keys = []
+	for key in grid_dict:
+		if not isinstance(key, int): continue
+		if not unicode(key) in old_data: return key
+		tilt_map_found = False
+		for item in old_data[unicode(key)]:
+			if 'tilt_map' in item:
+				tilt_map_found = True
+				break
+		if not tilt_map_found:
+			new_data[unicode(key)]['tilt_map'] = None
+			new_data[unicode(key)]['tilt_map_og'] = None
+		all_keys.append(unicode(key))
+	
+	if 'all' in str(grid_idx): to_do = all_keys
+	#if not file_existed: to_do = all_keys
+	else: to_do = [unicode(grid_idx)]
+	
+	
+	for jig in to_do:
+		idx = int(jig)
+		machiene.measure_tilt_3p_laser(
+			laser_sensor,
+			coord_func_dict[idx](pos=p1), 
+			coord_func_dict[idx](pos=p2), 
+			coord_func_dict[idx](pos=p3), 
+			)
+		
+		new_data[jig]["tilt_map"] = machiene.tilt_map
+		new_data[jig]["tilt_map_og"] = machiene.tilt_map_og
+	
+	# Compare new to old
+	for jig in to_do:
+		if not jig in old_data: continue
+		if not 'tilt_map' in old_data[jig]: continue
+		if old_data[jig]['tilt_map'] is None: continue
+	
+		print('Jig '+str(jig)+' tilt changes: ')
+		print('-- difference in origin height: '+str(new_data[jig]['tilt_map_og'][2] - old_data[jig]['tilt_map_og'][2]) + ' mm')
+		print('-- old tilt x in 10 cm: '+str(old_data[jig]['tilt_map']['x_tilt']*100.)+' mm')
+		print('-- new tilt x in 10 cm: '+str(new_data[jig]['tilt_map']['x_tilt']*100.)+' mm')
+		print('-- old tilt y in 10 cm: '+str(old_data[jig]['tilt_map']['y_tilt']*100.)+' mm')
+		print('-- new tilt y in 10 cm: '+str(new_data[jig]['tilt_map']['y_tilt']*100.)+' mm')
 	
 	
 	grid_file = open(cache_file, 'w')
@@ -1257,7 +1592,9 @@ class drawing2():
 			if not layer in self.drawing:
 				self.drawing[layer] = {}
 				self.drawing[layer]['lines'] = []
+				self.drawing[layer]['dots'] = []
 			if dxf_type == 'LINE': self.drawing[layer]['lines'].append([e.dxf.start, e.dxf.end])
+			if dxf_type == 'CIRCLE': self.drawing[layer]['dots'].append(e.dxf.center)
 		#for key in self.drawing:
 		#	print(key)
 		#	print(self.drawing[key])
@@ -1290,6 +1627,9 @@ class drawing2():
 			attempt = 0
 			while not satisfied:
 				self.clear_droplet(machine)
+				##TEMP FIX HOMING
+				#machine.home()
+				##
 				self.hight = start_h + attempt*0.1
 				self.draw_lines(machine, pressure, speed, dlines, set_pen=set_pen, delay=delay, up_first=up_first)
 				if not ask_redo:
@@ -1335,6 +1675,7 @@ class drawing2():
 		
 		# Set machine positions
 		init_move=lines[0][0]
+		#machine.gotoxy(position=self.coord_func(x=init_move[0] + offset[0], y=init_move[1] + offset[1]), speed=500)
 		machine.gotoxy(position=self.coord_func(x=init_move[0] + offset[0], y=init_move[1] + offset[1]))
 		previous_point=lines[0][0]
 		machine.down(hight)
@@ -1380,10 +1721,12 @@ class drawing2():
 
 	def clear_droplet(self, machine):
 		machine.gotoxy(position=self.clean_point[0:2])
-		machine.down(self.clean_point[2] -2, do_tilt=False)
+		machine.down(self.clean_point[2] -4, do_tilt=False)
 		machine.probe_z(speed=100)
 		#machine.down(self.clean_point[2], do_tilt=False, speed=100)
 		machine.up()
+		# 25/10/2021 home to reset accuracy (motor turn off)
+		machine.home()
 		
 	def layer_line_length(self, layer):
 		#print(self.drawing)
@@ -1414,6 +1757,13 @@ class drawing2():
 		time.sleep(drop_time)
 		machine.stop_pressure()
 		#machine.up()
+		
+	def get_picture_locations(self, layer):
+		positions = []
+		for pic in self.drawing[layer]['dots']:
+			positions.append(self.coord_func(x=pic[0] + self.offset[0], y=pic[1] + self.offset[1]))
+		#print(positions)
+		return positions
 				
 				
 def offset_test(offset):

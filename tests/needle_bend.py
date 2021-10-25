@@ -3,6 +3,7 @@ sys.path.append('C:\\Users\\LitePlacer\\Documents\\liteplacer-glue')
 
 import math
 import scipy
+import random
 import datetime
 import matplotlib
 from matplotlib import pyplot
@@ -13,7 +14,8 @@ from scale_handler import lin_reg
 
 #data_file = 'tests\\NeedleBend_blue_metal.txt'
 #data_file = 'tests\\NeedleBend_pink_metal.txt'
-data_file = 'tests\\NeedleBendLC2_blue_metal.txt'
+#data_file = 'tests\\NeedleBendLC2_blue_metal.txt'
+data_file = 'tests\\NeedleBend_blue_plastic2.txt'
 
 #data_file = 'tests\\NeedleBend_pink_plastic.txt'
 
@@ -61,7 +63,7 @@ def read_file(file_name, write_cache=False):
 	ax.set(xlabel='Speed (mm/min)', ylabel=u'Hight std (\u03bcm)', title='Bend std')
 	pyplot.show()
 	
-	mass_w = [1./(std**2) for std in std_lst]
+	mass_w = [1./((std+0.0001)**2) for std in std_lst]
 	bias, bend_f, bias_int, bf_int, failed = lin_reg(speed_lst, relmean_lst, mass_w)
 	print(bias, bend_f)
 	bend_fit = [s*bend_f + bias for s in speed_lst]
@@ -101,7 +103,7 @@ def sum_lists(x, y, factor=1):
 	
 if __name__ == '__main__':
 
-	measure = False
+	measure = True
 	
 	if not measure:
 		read_file(data_file, False)
@@ -111,23 +113,28 @@ if __name__ == '__main__':
 	machiene.init_code()
 	
 	data_file_o = open(data_file, 'a')
+	
 	data_file_o.write("#\t ____START_BEND_SESSION____\n")
 	data_file_o.write("#\t TIME: " + datetime.datetime.now().strftime("%Y %b %d\t%H:%M:%S") + "\n") #%G %b %d  
 	data_file_o.close()
 	
-	prb_speeds = [200, 175, 150, 125, 100, 50, 25, 12, 6]
+	prb_speeds = [25]
+	#prb_speeds = [100, 75, 50, 25, 12, 6]
+	#prb_speeds = [6, 12, 25, 50, 100, 125, 150, 175, 200]
 	#prb_speeds = [125, 100]
-	probe_pos = [36, 110]
+	probe_pos = [31, 110]
 	#prb_speeds = [175, 125, 12, 6]
 	machiene.gotoxy(probe_pos[0], probe_pos[1])
 	machiene.down(10)
-	dwn = machiene.probe_z(speed=100)[2] - 1
-	for speed in prb_speeds:
+	dwn = machiene.probe_z(speed=100)[2] - 5
+	for it in range(10):
+		for speed in prb_speeds:
 		
-		probe_speed = speed
-		print('CURRENT SPEED: ' + str(probe_speed))
+			probe_speed = speed
+			print('CURRENT SPEED: ' + str(probe_speed))
 		
-		for it in range(20):
+			#for it in range(20):
+		
 		
 			machiene.gotoxy(probe_pos[0], probe_pos[1])
 			machiene.down(dwn)
@@ -135,7 +142,7 @@ if __name__ == '__main__':
 			print(z_s)
 			
 			machiene.up()
-			machiene.gotoxy(probe_pos[0] + 10, probe_pos[1] + 10)
+			machiene.gotoxy(probe_pos[0] + 10 +10*random.random(), probe_pos[1] + 10*random.random())
 			
 			prt_str = '\t'.join([str(probe_speed), str(z_s),'\n'])
 			

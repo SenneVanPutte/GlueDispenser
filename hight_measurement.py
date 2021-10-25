@@ -5,7 +5,7 @@ from glueing_cfg import JIG_OFFSET_CFG, sum_offsets, JIG_CFG
 from gcode_handler import gcode_handler, drawing, make_jig_coord, make_quick_func, drawing2
 from scale_handler import scale_handler, delay_and_flow_regulation
 
-data_file = 'sensor_hight.txt' 
+data_file = 'plexi_hight.txt' 
 def read_file(file_name):
 	file_o = open(file_name, 'r')
 	lines = file_o.readlines()

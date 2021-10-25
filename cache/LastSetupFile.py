@@ -1,5 +1,5 @@
 {
-  "jig": "kapton_B", 
+  "jig": "kapton_jig", 
   "grid": "1x1", 
-  "drawing": "kapton"
+  "drawing": "kapton_short_only"
 }

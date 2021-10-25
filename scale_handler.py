@@ -13,12 +13,44 @@ import math
 from scipy.stats import t
 import json
 
+
+#voltage should be around 2.5 (3 is saturation on + side, 0.2 is saturation on - side)
+# if wrong change coarse setting untill no longer saturating 
+# then adjust to ~2.5 with fine offset
+'''
+Documentation of pga309, Texas Instrument TI
+Scale commands:
+g = calibrate 1g
+t = zero
+w = write settings
+
+v = voltage mode (again v to stop) (nothing on scale => should be around 2.5)
+q = +100 offset (fine setting)
+s = -100 offset
+l = +1 in setting to offset huge amount (coarse setting)
+m = -1 
+
+0 = clear black box buffer
+# = dumb black box memory
+L = activate black box mode
+z = swap inputs 
+u = - front end gain
+y = + front end gain
+o = + gain of output amplifier (stay away from 7)
+p = - gain of output amplifier
+a,b,c,f,d = change moving average (1, 5, 10, 40, 160, 600)
+r = reload settings from memory
+
+C = automatic calibration (with robot arm and 1g weight)
+'''
+
+
 class scale_handler():
 	"""
 	connection to the calibration scale
 	"""
 	def __init__(self, ask_glue_prod=True):
-		ser = serial.Serial(r"COM4", baudrate=1000000, xonxoff=False, timeout=0)
+		ser = serial.Serial(r"COM6", baudrate=1000000, xonxoff=False, timeout=0)
 		self.clear_time = 0.3
 		# Sample rate in sec
 		#self.read_freq = 0.125
@@ -110,7 +142,7 @@ class scale_handler():
 	def zero(self):
 		self.send_command("t t ")
 		self.clear_buffer()
-		time.sleep(0.1)
+		time.sleep(0.2)
 		#self.send_command("t")
 		self.clear_buffer()
 		#return
@@ -123,7 +155,7 @@ class scale_handler():
 		
 		while( abs(mass) > 0.01):
 			self.send_command("t")
-			time.sleep(0.2)
+			time.sleep(0.4)
 			mass = self.read_mass()
 			if time.time() - start > time_out:
 				raise ScaleError('zeroing timeout of '+str(time_out)+' s exceeded ')
@@ -165,8 +197,13 @@ class scale_handler():
 		freq = (t_data + 0.)/(n_data + 0.)
 		#print(n_data, t_data, freq)
 		self.read_freq = freq
-		
-	def calibrate(self, option="g", clear_time=None):
+		print('Scale: readfrq='+str(freq))
+	
+	def calibrate(self):
+		self.send_command('C')
+		self.wait_for_response(response_str='calibration done', time_out=30)
+	
+	def calibrate_gain(self, option="g", clear_time=None):
 		'''
 		g = 1g
 		h = 50g
@@ -211,7 +248,9 @@ class scale_handler():
 		e = 160 or 16s
 		f = 600 or 1min
 		'''
+		print('scale_handler: conf_avg')
 		self.send_command(option)
+		print('scale_handler: conf_avg: HERE')
 		self.write_glue_log("")
 		self.write_glue_log("scale average set: " + option)
 		self.write_glue_log("")
@@ -231,6 +270,7 @@ class scale_handler():
 		response = self.serialport_pnp.readlines()
 		#print(response)
 		#response = self.serial_p.readline()[:-1]
+		#print(response)
 		if response != []: return response[-1]
 		return ''
 		
@@ -239,7 +279,7 @@ class scale_handler():
 		[instant_value, average, sigma, pressure_on]
 		"""
 		response = self.read_port()
-		if response != '':
+		if response != '' and not '#' in response:
 			temp = response.replace(' ', '').replace('\n', '').replace('\t', '/')
 			temp = temp.split('/') 
 			for i, val in enumerate(temp):
@@ -249,6 +289,25 @@ class scale_handler():
 			temp = [None, None, None, None]
 		
 		return temp
+		
+	def wait_for_response(self, response_str='/', time_out=30):
+		'''
+		loop port readout until response_str is found or time_out (in s) is met
+		'''
+		self.write_glue_log("Waiting for response: "+response_str)
+		start = time.time()
+		response = ''
+		while not response_str in response: 
+			if time.time() - start > time_out: 
+				print('Scale: wait_for_response timed out after '+str(time_out)+'s, "'+response_str+'" was not found in any response')
+				#break
+				return
+			response = self.read_port()
+			#print('wait resp: ',response)
+			if response != '': self.write_glue_log("response: "+response)
+			time.sleep(0.01)
+		self.write_glue_log("Response was found!")
+		return	
 	
 	def read_mass(self):
 		mass = None
@@ -1075,6 +1134,115 @@ def delay_and_flow_regulation(machiene, scale, pos, init_pressure, desired_flow,
 		data, delay, flow, flow_int, x_sim, y_sim, y_sim_up, y_sim_dn = meas_f(machiene, scale, pressure, relaxation_time, mass_limit, th, show_data=show_data)
 	
 	return pressure, delay, flow
+ 
+def calc_flow(data):
+	# Split the data (before pressure, during pressure, after pressure)
+	t_st = data[0][0]
+	t_on = None
+	t_of = None
+
+	y_end = []
+	y_between = []
+	x_between = []
+	y_start = []
+	
+	y_all = []
+	x_all = []
+	
+	for point in data:
+		cur_time = point[0]
+		cur_mass = point[1][0]
+		pres_bit = point[1][-1]
+		y_all.append(cur_mass)
+		x_all.append(cur_time)
+		if t_on is None and pres_bit: t_on = cur_time
+		if not t_on is None and t_of is None and not pres_bit: t_of = cur_time
+		if t_on is None: y_start.append(cur_mass)
+		if not t_on is None and t_of is None: 
+			y_between.append(cur_mass)
+			x_between.append(cur_time)
+		if not t_of is None: y_end.append(cur_mass)
+	
+	if t_on is None or t_of is None: raise ScaleError('flow fitting: pressure ON/OFF not found')
+	
+	# Detect jump
+	sd = StdDev(y_start)
+	jump = abs(y_between[-1] - median(y_end))
+	if jump > 2*sd: jump -= 2*sd
+	
+	# Select data for fit
+	x_fit = []
+	y_fit = []
+	fill = False
+	delay = 0.
+	for idx in range(len(x_between)):
+		x = x_between[idx]
+		y = y_between[idx]
+		if not fill and y > y_start[-1] + jump: 
+			fill = True
+			delay = y - t_on
+		if fill: 
+			x_fit.append(x - t_st)
+			y_fit.append(y)
+			
+	# Fit
+	a, b, a_int, b_int, redo = lin_reg(x_fit, y_fit)
+	
+	# Interpret and simulate
+	flow = b*1000.
+	flow_int = [b_int[0]*1000., b_int[1]*1000.]
+	print(flow, delay)
+	press_int = [t_on - t_st, t_of - t_st]
+	#x_sim = [t + delay for t in tw_time]
+	x_sim = [x_fit[0], x_fit[-1]]
+	y_sim = [t*b + a for t in x_sim]
+	y_st = [y_fit[0]*b_int[1] + a_int[1], 
+		y_fit[0]*b_int[1] + a_int[0], 
+		y_fit[0]*b_int[0] + a_int[1], 
+		y_fit[0]*b_int[0] + a_int[0]]
+	y_nd = [y_fit[-1]*b_int[1] + a_int[1], 
+		y_fit[-1]*b_int[1] + a_int[0], 
+		y_fit[-1]*b_int[0] + a_int[1], 
+		y_fit[-1]*b_int[0] + a_int[0]]
+	y_sim_up = [max(y_st), max(y_nd)]
+	y_sim_dn = [min(y_st), min(y_nd)]
+	
+	x_st = [t_on - t_st, t_on - t_st]
+	x_fi = [t_of - t_st, t_of - t_st]
+	y_st = [min(y_all), max(y_all)]
+	
+	return_dict = {}
+	return_dict['delay'] = delay
+	return_dict['flow'] = flow
+	return_dict['flow_int'] = flow_int
+	return_dict['x_sim'] = x_sim
+	return_dict['y_sim'] = y_sim
+	return_dict['y_sim_up'] = y_sim_up
+	return_dict['y_sim_dn'] = y_sim_dn
+	return_dict['redo'] = redo
+	return_dict['press_int'] = press_int
+	return_dict['x_st'] = x_st
+	return_dict['x_fi'] = x_fi
+	return_dict['y_st'] = y_st
+
+	return return_dict
+	
+	
+def median(data_list):
+	data_list.sort()
+	# Even len
+	if len(data_list)%2 == 0: return (data_list[len(data_list)/2] + data_list[len(data_list)/2 -1])/2.
+	else: return data_list[len(data_list)/2]
+	
+def mean(data_list):
+	return sum(data_list)/(len(data_list)+0.)
+	
+def StdDev(data_list):
+	s2 = 0.
+	m = mean(data_list)
+	for point in data_list:
+		s2 += (point-m)**2
+	return math.sqrt(s2/(len(data_list)+0.))
  
 def calc_delay_and_flow(data, th, scale, relax_time, low_flow):
 	t_pres_on = None

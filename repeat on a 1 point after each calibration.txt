@@ -1,0 +1,2 @@
+number	time	x	y	z	surf by touch	surf by laser	machine loc
+number	time	x	y	z	surf by touch	surf by laser	machine loc
